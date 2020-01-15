@@ -32,8 +32,10 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public void onUpdateReceived(final Update update) {
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            logger.debug("Got message: {}", update);
+        logger.debug("Got message: {}", update);
+
+        if (update.hasMessage() && update.getMessage().hasText() &&
+        update.getMessage().getText().equals("/subscribe")) {
 
             final Long userChatId = update.getMessage().getChatId();
             subscribedUsers.add(userChatId);
@@ -54,6 +56,8 @@ public class Bot extends TelegramLongPollingBot {
             SendMessage sendMessage = new SendMessage() // Create a SendMessage object with mandatory fields
                     .setChatId(subscribedUser)
                     .setText(message);
+
+            sendMessage = AnswerKeyboardAttacher.attachKeyboard(sendMessage);
 
             try {
                 execute(sendMessage); // Call method to send the message
