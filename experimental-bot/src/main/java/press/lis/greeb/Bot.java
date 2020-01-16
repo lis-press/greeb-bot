@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @author Aleksandr Eliseev
  */
 public class Bot extends TelegramLongPollingBot {
     private static final Logger logger = LoggerFactory.getLogger(Bot.class);
