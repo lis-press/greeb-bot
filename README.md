@@ -5,7 +5,8 @@ Greeb — java telegram bot.
 * [TelegramBots](https://github.com/rubenlagus/TelegramBots)
 to work with Telegram.
 * Spring Framework + Spring Boot for Dependency injection.
-  * Spring Scheduling to use CRON expressions (via #1).
+  * Spring Scheduling to use CRON expressions 
+  (via [#1](https://github.com/lis-press/greeb-bot/issues/1)).
 * Typesafe config to config from command line and Hocon language.
 * Slf4J with Logback for logging.
 
