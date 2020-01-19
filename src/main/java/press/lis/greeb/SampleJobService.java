@@ -20,7 +20,7 @@ public class SampleJobService {
     private Bot bot;
 
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(cron = "*/5 * * * * *")
     public void executeSampleJob() {
         String message = String.format("The time is now %s", dateFormat.format(new Date()));
 
