@@ -1,3 +1,7 @@
 # Project exclude paths
 /target/
 /.idea
+credentials*
+.nrepl-port
+src/test/
+tokens/

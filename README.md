@@ -9,8 +9,24 @@ to work with Telegram.
   (via [#1](https://github.com/lis-press/greeb-bot/issues/1)).
 * Typesafe config to config from command line and Hocon language.
 * Slf4J with Logback for logging.
+* Clojure used to speed up experiments with current infrastructure.
 
 ## Configuration
+
+### Google Spreadsheet API
+
+The introduction done using:
+https://developers.google.com/sheets/api/quickstart/java
+
+You should generate credentials on this page and add them to resources
+in order to set up in integration with google spreadsheets.
+
+
+### Clojure
+
+You can use clojure REPL together with files in your classpath.
+It can speed up development and experiments a bit.
+
 
 ### Proxy
 
