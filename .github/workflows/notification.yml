@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Notification about the build readiness
+    - name: Notification about the master push
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.HOST }}
@@ -16,4 +16,4 @@ jobs:
         key: ${{ secrets.KEY }}
         port: ${{ secrets.PORT }}
         passphrase: ${{ secrets.PASSPHRASE }}
-        script: . ./notify.sh {{ GITHUB_EVENT_NAME }}
+        script: ./notify.sh '${{ github.actor }} made a ${{ github.event_name }}'
