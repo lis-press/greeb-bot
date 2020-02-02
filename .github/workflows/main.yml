@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: executing remote ssh commands using ssh key
+    - name: Notification about the build readiness
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.HOST }}
