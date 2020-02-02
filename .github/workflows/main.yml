@@ -16,4 +16,4 @@ jobs:
         key: ${{ secrets.KEY }}
         port: ${{ secrets.PORT }}
         passphrase: ${{ secrets.PASSPHRASE }}
-        script: whoami
+        script: . ./notify.sh {{ GITHUB_EVENT_NAME }}
