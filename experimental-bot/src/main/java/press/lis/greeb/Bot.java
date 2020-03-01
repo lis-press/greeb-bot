@@ -56,7 +56,7 @@ public class Bot extends TelegramLongPollingBot {
                     .setChatId(subscribedUser)
                     .setText(message);
 
-            sendMessage = AnswerKeyboardAttacher.attachKeyboard(sendMessage);
+            sendMessage = AnswerKeyboardAttacher.attachInlineKeyboard(sendMessage);
 
             try {
                 execute(sendMessage); // Call method to send the message
