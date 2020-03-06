@@ -14,8 +14,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
  */
 @Configuration
 public class BotConfiguration {
-    private static String PROXY_HOST = "localhost" /* proxy host */;
-    private static Integer PROXY_PORT = 1337 /* proxy port */;
+    private static String PROXY_HOST = "localhost";
+    private static Integer PROXY_PORT = 1337;
 
     @Bean
     public Bot createBot() {
