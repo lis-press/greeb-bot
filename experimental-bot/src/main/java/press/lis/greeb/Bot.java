@@ -4,9 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import press.lis.greeb.processing.AnswerKeyboardAttacher;
+import press.lis.greeb.processing.InlineQueryProcessor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -19,9 +23,17 @@ public class Bot extends TelegramLongPollingBot {
 
     private final Set<Long> subscribedUsers = new HashSet<>();
 
-    public Bot(final String bot_token, final DefaultBotOptions options) {
+    private final InlineQueryProcessor inlineQueryProcessor;
+    private final AnswerKeyboardAttacher answerKeyboardAttacher;
+
+    public Bot(final String bot_token,
+               final DefaultBotOptions options,
+               final InlineQueryProcessor inlineQueryProcessor,
+               final AnswerKeyboardAttacher answerKeyboardAttacher) {
         super(options);
         this.bot_token = bot_token;
+        this.inlineQueryProcessor = inlineQueryProcessor;
+        this.answerKeyboardAttacher = answerKeyboardAttacher;
     }
 
     public static void main(String[] args) {
@@ -31,7 +43,16 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public void onUpdateReceived(final Update update) {
-        logger.debug("Got message: {}", update);
+        logger.debug("Got update: {}", update);
+        if (update.getCallbackQuery() != null) {
+            CallbackQuery query = update.getCallbackQuery();
+            AnswerCallbackQuery answer = inlineQueryProcessor.createReactionOnInlineAnswer(query);
+            try {
+                execute(answer);
+            } catch (TelegramApiException e) {
+                logger.error("Can't send a message!", e);
+            }
+        }
 
         if (update.hasMessage() && update.getMessage().hasText() &&
         update.getMessage().getText().equals("/subscribe")) {
@@ -56,7 +77,7 @@ public class Bot extends TelegramLongPollingBot {
                     .setChatId(subscribedUser)
                     .setText(message);
 
-            sendMessage = AnswerKeyboardAttacher.attachInlineKeyboard(sendMessage);
+            sendMessage = answerKeyboardAttacher.attachInlineKeyboard(sendMessage);
 
             try {
                 execute(sendMessage); // Call method to send the message

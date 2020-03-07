@@ -1,4 +1,4 @@
-package press.lis.greeb;
+package press.lis.greeb.processing;
 
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -11,17 +11,13 @@ import java.util.List;
 
 public class AnswerKeyboardAttacher {
 
-    private static ArrayList<ArrayList<String>> buttonTexts = new ArrayList<>(2);
+    private final ArrayList<ArrayList<String>> buttonTexts;
 
-    static {
-        buttonTexts.add(new ArrayList<>(2));
-        buttonTexts.add(new ArrayList<>(1));
-        buttonTexts.get(0).add("Will go!");
-        buttonTexts.get(0).add("Wouldn't go =(");
-        buttonTexts.get(1).add("Dunno...");
+    public AnswerKeyboardAttacher(final ArrayList<ArrayList<String>> buttonTexts) {
+        this.buttonTexts = buttonTexts;
     }
 
-    public static SendMessage attachKeyboard(SendMessage message) {
+    public SendMessage attachKeyboard(SendMessage message) {
 
         ArrayList<KeyboardRow> rowArrayList = new ArrayList<>(buttonTexts.size());
         for (ArrayList<String> buttonText : buttonTexts) {
@@ -41,7 +37,7 @@ public class AnswerKeyboardAttacher {
 
     }
 
-    public static SendMessage attachInlineKeyboard(SendMessage message) {
+    public SendMessage attachInlineKeyboard(SendMessage message) {
 
         List<List<InlineKeyboardButton>> buttonsArray = new ArrayList<>(buttonTexts.size());
         for (ArrayList<String> buttonText : buttonTexts) {
