@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,7 +32,7 @@ public class SheetsClient {
      * Global instance of the scopes required by this quickstart.
      * If modifying these scopes, delete your previously saved tokens/ folder.
      */
-    private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS_READONLY);
+    private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
     /**
@@ -69,6 +70,12 @@ public class SheetsClient {
                 .get(spreadsheetId, range)
                 .execute();
 
+        service.spreadsheets().values().update(
+                "1q3pPL_PMhnXbaAOsQ4EU96hAn7ZJuZQJguEEyvONipY",
+                "AJ9",
+                new ValueRange().setValues(Collections.singletonList(Collections.singletonList(true)))
+        ).setValueInputOption("USER_ENTERED").execute();
+
         List<List<Object>> values = response.getValues();
         if (values == null || values.isEmpty()) {
             System.out.println("No data found.");
@@ -79,6 +86,10 @@ public class SheetsClient {
                 System.out.printf("%s, %s\n", row.get(0), row.get(4));
             }
         }
+
+        // Сделать возможность подписаться, сказать строку, он выяснит, какой у нас сегодняшниий день
+        // Бот будет присылать сообщение каждый день, давать ссылку на материал и ему можно будет ответить, что я прочитал
+        // Можно зансабскрайбится (мне нужен будет правда subscribed to bot)
     }
 
     public static Sheets getSheetService() throws IOException, GeneralSecurityException {
