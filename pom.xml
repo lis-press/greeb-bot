@@ -51,6 +51,12 @@
             <version>1.2.3</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.github.microutils</groupId>
+            <artifactId>kotlin-logging</artifactId>
+            <version>1.7.8</version>
+        </dependency>
+
         <!-- Kotlin! Just for fun -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>

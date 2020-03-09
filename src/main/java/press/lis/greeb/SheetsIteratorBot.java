@@ -75,13 +75,6 @@ public class SheetsIteratorBot extends TelegramLongPollingBot {
         return response.getValues();
 
     }
-    /*
-     * Вывести всех пользователей, у которых стоит плюс в третьей колонке
-     * По запросу выводить то, какой день мы сейчас читаем
-     * По дню вывести текущий день, который мы читаем
-     * Давать раз в день предложение о том, что сделал чувак
-     * По запросу можно вывести следующий день
-     * */
 
     public void onUpdateReceived(final Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
