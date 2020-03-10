@@ -62,17 +62,35 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
         val values = response.getValues()
 
+        val header = values[0]
+
         val subscribed = values.subList(1, values.size - 1).filter {
             it.size > 2 && it[2] != null && it[2] != ""
         }
 
         subscribed.forEach {
-            val sendMessage: SendMessage = SendMessage() // Create a SendMessage object with mandatory fields
-                    .setChatId(it[2].toString().toLong())
-                    .setText("${it[1]} you're subscribed")
+            val lastDay = it.indexOf("FALSE")
+
+            val sendMessage: SendMessage = if (lastDay == -1) {
+                SendMessage() // Create a SendMessage object with mandatory fields
+                        .setChatId(it[2].toString().toLong())
+                        .setText("Поздравляю! Вы уже закончили, а теперь пора отписываться.")
+
+                // TODO add unsubscription
+            } else {
+                val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
+
+                SendMessage() // Create a SendMessage object with mandatory fields
+                        .setChatId(it[2].toString().toLong())
+                        .setText("${it[1]}, напоминаю про время молотков.\n" +
+                                "Ссылка на сегодняшнюю статью: $linkToMaterial")
+
+                // TODO add keyboard here
+            }
 
             execute(sendMessage)
         }
+
 
         // TODO Find the description of the last day, make a link to it
         // TODO add custom keyboard to complete day, show next days and unsubscribe
