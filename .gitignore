@@ -3,6 +3,5 @@
 /.idea
 credentials*
 .nrepl-port
-src/test/
 tokens/
 greeb-bot.iml

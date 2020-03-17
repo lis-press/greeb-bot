@@ -83,7 +83,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
                             SendMessage() // Create a SendMessage object with mandatory fields
                                     .setChatId(daysRow[2].toString().toLong())   // TODO здесь я хотел бы здесь правильный фильтр
-                                    .setText("Поздравляю! Вы уже закончили, а теперь пора отписываться.")
+                                    .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!")
                         } else {
                             val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
                             val columnNumberToA1Notation = SpreadSheetsHelpers.columnNumberToA1Notation(lastDay)
@@ -99,8 +99,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                             SendMessage() // Create a SendMessage object with mandatory fields
                                     .setChatId(daysRow[2].toString().toLong())
                                     .setText("${daysRow[1]}, напоминаю про время молотков.\n" +
-                                            "Ссылка на сегодняшнюю статью: $linkToMaterial\n" +
-                                            "Собираюсь обновить: $updateCellA1Notation")
+                                            "Ссылка на сегодняшнюю статью: $linkToMaterial")
                         }
 
                         execute(sendMessage)
