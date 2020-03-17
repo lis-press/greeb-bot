@@ -1,6 +1,5 @@
 package press.lis.greeb.experiments
 
-import com.google.api.services.sheets.v4.model.BatchUpdateValuesByDataFilterRequest
 import press.lis.greeb.SheetsClient
 
 // You can try to run this in REPL mode to experiment with spreadsheets
@@ -22,18 +21,35 @@ val response = x.spreadsheets().values()
 
 val values = response.getValues()
 
-val subscribed = values.subList(1, values.size - 1).filter {
-    it.size > 2 && it[2] != null && it[2] != ""
+values[0]
+
+fun columnNumberToA1(columnNumber: Int): String {
+    var columnNumberInternal: Int = columnNumber
+    val sb = StringBuilder()
+    val numberOfLetters = 26
+
+    while (true) {
+        sb.append('A' + columnNumberInternal % numberOfLetters)
+
+        if (columnNumberInternal < numberOfLetters) {
+            break
+        }
+
+        columnNumberInternal /= numberOfLetters
+        columnNumberInternal--
+    }
+
+    return sb.reverse().toString()
 }
 
-subscribed
-
-println(subscribed)
-
-subscribed.map { it.size }
-
-response
-
-response.keys
-
-x.spreadsheets().values().batchUpdateByDataFilter(s_id, BatchUpdateValuesByDataFilterRequest())
+columnNumberToA1(1)
+columnNumberToA1(28)
+columnNumberToA1(26)
+columnNumberToA1(27)
+columnNumberToA1(270)
+columnNumberToA1(676)
+columnNumberToA1(702)
+columnNumberToA1(702)
+columnNumberToA1(701)
+columnNumberToA1(25)
+columnNumberToA1(701)
