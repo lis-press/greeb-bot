@@ -1,5 +1,6 @@
 package press.lis.greeb.experiments
 
+import com.google.api.services.sheets.v4.model.BatchUpdateValuesByDataFilterRequest
 import press.lis.greeb.SheetsClient
 
 // You can try to run this in REPL mode to experiment with spreadsheets
@@ -30,3 +31,9 @@ subscribed
 println(subscribed)
 
 subscribed.map { it.size }
+
+response
+
+response.keys
+
+x.spreadsheets().values().batchUpdateByDataFilter(s_id, BatchUpdateValuesByDataFilterRequest())

@@ -32,13 +32,63 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
         if (update?.message?.text != null) {
             when (update.message.text) {
                 "/subscribe" -> {
-                    TODO("ADD THE UPDATE OF TABLE HERE AND WARN IF NOT IN THE TABLE. ON SUCCESFUL UPDATE MAKE link")
+                    val userName = update.message.from.userName
+                    val chatId = update.message.chatId
+
+                    val values = getMarathonSheet()
+
+                    val header = values[0]
+
+                    val subscribed = values.subList(1, values.size - 1).filter {
+                        it.size > 1 && it[1] == userName
+                    }
+
+                    val sendMessage: SendMessage = SendMessage() // Create a SendMessage object with mandatory fields
+                            .setChatId(chatId)   // TODO здесь я хотел бы здесь правильный фильтр
+                            .setText("Вы подписались! Я буду присылать ссылку на следующую неотмеченную главу каждый день." +
+                                    "\nЕщё я могу отметить день прочитанным.")
+
+
+
+                    TODO("ADD THE UPDATE OF TABLE HERE AND WARN IF NOT IN THE TABLE. ON SUCCESSFUL UPDATE MAKE link")
                 }
                 "/unsubscribe" -> {
                     TODO("ADD THE DELETION FROM TABLE HERE")
                 }
                 "done" -> {
-                    TODO("FIND USER BY NICK, UPDATE HIS LAST DAY")
+                    val userName = update.message.from.userName
+                    val chatId = update.message.chatId.toString()
+
+                    val values = getMarathonSheet()
+
+                    val header = values[0]
+
+                    val subscribed = values.subList(1, values.size - 1).filter {
+                        it.size > 2 && it[2] == chatId
+                    }
+
+                    subscribed.forEach {
+                        val lastDay = it.indexOf("FALSE")
+
+                        val sendMessage: SendMessage = if (lastDay == -1) {
+                            SendMessage() // Create a SendMessage object with mandatory fields
+                                    .setChatId(it[2].toString().toLong())   // TODO здесь я хотел бы здесь правильный фильтр
+                                    .setText("Поздравляю! Вы уже закончили, а теперь пора отписываться.")
+
+                            // TODO add unsubscription
+                        } else {
+                            val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
+
+                            SendMessage() // Create a SendMessage object with mandatory fields
+                                    .setChatId(it[2].toString().toLong())
+                                    .setText("${it[1]}, напоминаю про время молотков.\n" +
+                                            "Ссылка на сегодняшнюю статью: $linkToMaterial")
+
+                            // TODO mark that the day is finished
+                        }
+
+                        execute(sendMessage)
+                    }
 
                     //x.spreadsheets().values().update(
                     //        s_id,
@@ -52,20 +102,12 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
     // TODO add the cron configuration for this method
     fun notifySubscribers() {
-        val x = SheetsClient.getSheetService()
-
-        val s_id = "1q3pPL_PMhnXbaAOsQ4EU96hAn7ZJuZQJguEEyvONipY"
-        val response = x.spreadsheets().values()
-                .get(s_id,
-                        "A:AM")
-                .execute()
-
-        val values = response.getValues()
+        val values = getMarathonSheet()
 
         val header = values[0]
 
         val subscribed = values.subList(1, values.size - 1).filter {
-            it.size > 2 && it[2] != null && it[2] != ""
+            it.size > 2 && it[2] != ""
         }
 
         subscribed.forEach {
@@ -94,6 +136,19 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
         // TODO Find the description of the last day, make a link to it
         // TODO add custom keyboard to complete day, show next days and unsubscribe
+    }
+
+    private fun getMarathonSheet(): List<MutableList<Any>> {
+        val x = SheetsClient.getSheetService()
+
+        val s_id = "1q3pPL_PMhnXbaAOsQ4EU96hAn7ZJuZQJguEEyvONipY"
+        val response = x.spreadsheets().values()
+                .get(s_id,
+                        "A:AM")
+                .execute()
+
+        val values = response.getValues()
+        return values
     }
 }
 
