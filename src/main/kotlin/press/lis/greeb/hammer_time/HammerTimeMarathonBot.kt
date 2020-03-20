@@ -35,32 +35,73 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
         if (update?.message?.text != null) {
             when (update.message.text) {
+                "/start" -> {
+                    execute(SendMessage()
+                            .setChatId(update.message.chatId)
+                            .setText("Привет! Это бот для марафона HammerTime, нажмите /subscribe, чтобы " +
+                                    "получать напоминания. Вы сможете отписаться в любой момент нажав /unsubscribe"))
+                }
                 "/subscribe" -> {
                     val userName = update.message.from.userName
                     val chatId = update.message.chatId
 
                     val values = getMarathonSheet()
 
-                    val header = values[0]
+                    values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
+                        if (daysRow.size <= 2 ||
+                                daysRow[1].toString().toLowerCase().substring(1) != userName.toLowerCase())
+                            return@forEachIndexed
 
-                    val subscribed = values.subList(1, values.size - 1).filter {
-                        it.size > 1 && it[1] == userName
+                        // TODO side effect in declaration seems bad
+                        spreadSheetService.spreadsheets().values().update(
+                                hammertimeSheetId,
+                                "C${index + 2}",
+                                ValueRange().setValues(listOf(listOf(chatId)))
+                        ).setValueInputOption("USER_ENTERED").execute()
+
+                        execute(SendMessage()
+                                .setChatId(chatId)
+                                .setText("Поздравляю! Вы подписаны, утром напомню о статье!"))
+
+                        return
                     }
 
-                    val sendMessage: SendMessage = SendMessage() // Create a SendMessage object with mandatory fields
-                            .setChatId(chatId)   // TODO здесь я хотел бы здесь правильный фильтр
-                            .setText("Вы подписались! Я буду присылать ссылку на следующую неотмеченную главу каждый день." +
-                                    "\nЕщё я могу отметить день прочитанным.")
-
-
-
-                    TODO("ADD THE UPDATE OF TABLE HERE AND WARN IF NOT IN THE TABLE. ON SUCCESSFUL UPDATE MAKE link")
+                    execute(SendMessage()
+                            .setChatId(chatId)
+                            .setText("Не смог найти вас в таблице, проверьте ник в таблице и попробуйте ещё"))
                 }
                 "/unsubscribe" -> {
-                    TODO("ADD THE DELETION FROM TABLE HERE")
+
+                    val userName = update.message.from.userName
+                    val chatId = update.message.chatId
+
+                    val values = getMarathonSheet()
+
+                    values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
+                        // TODO search by chat id
+                        if (daysRow.size <= 2 ||
+                                daysRow[1].toString().toLowerCase().substring(1) != userName.toLowerCase())
+                            return@forEachIndexed
+
+                        // TODO side effect in declaration seems bad
+                        spreadSheetService.spreadsheets().values().update(
+                                hammertimeSheetId,
+                                "C${index + 2}",
+                                ValueRange().setValues(listOf(listOf("")))
+                        ).setValueInputOption("USER_ENTERED").execute()
+
+                        execute(SendMessage()
+                                .setChatId(chatId)
+                                .setText("Вы отписаны! Если захотите вернуться, жмите на /subscribe"))
+
+                        return
+                    }
+
+                    execute(SendMessage()
+                            .setChatId(chatId)
+                            .setText("Не смог найти вас в таблице, похоже, вы уже отписаны!"))
                 }
                 "done" -> {
-                    val userName = update.message.from.userName
                     val chatId = update.message.chatId.toString()
 
                     val values = getMarathonSheet()
@@ -73,36 +114,32 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
                         val lastDay = daysRow.indexOf("FALSE")
 
-                        val sendMessage: SendMessage = if (lastDay == -1) {
-                            // TODO side effect in declaration seems bad
+                        if (lastDay == -1) {
                             spreadSheetService.spreadsheets().values().update(
                                     hammertimeSheetId,
                                     "C${index + 2}",
                                     ValueRange().setValues(listOf(listOf("")))
                             ).setValueInputOption("USER_ENTERED").execute()
 
-                            SendMessage() // Create a SendMessage object with mandatory fields
+                            execute(SendMessage()
                                     .setChatId(daysRow[2].toString().toLong())   // TODO здесь я хотел бы здесь правильный фильтр
-                                    .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!")
+                                    .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!"))
                         } else {
                             val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
                             val columnNumberToA1Notation = SpreadSheetsHelpers.columnNumberToA1Notation(lastDay)
                             val updateCellA1Notation = "$columnNumberToA1Notation${index + 2}"
 
-                            // TODO side effect in declaration seems bad
                             spreadSheetService.spreadsheets().values().update(
                                     hammertimeSheetId,
                                     updateCellA1Notation,
                                     ValueRange().setValues(listOf(listOf(true)))
                             ).setValueInputOption("USER_ENTERED").execute()
 
-                            SendMessage() // Create a SendMessage object with mandatory fields
+                            execute(SendMessage() // Create a SendMessage object with mandatory fields
                                     .setChatId(daysRow[2].toString().toLong())
                                     .setText("${daysRow[1]}, напоминаю про время молотков.\n" +
-                                            "Ссылка на сегодняшнюю статью: $linkToMaterial")
+                                            "Ссылка на сегодняшнюю статью: $linkToMaterial"))
                         }
-
-                        execute(sendMessage)
                     }
                 }
             }
@@ -115,36 +152,42 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
         val header = values[0]
 
-        val subscribed = values.subList(1, values.size - 1).filter {
-            it.size > 2 && it[2] != ""
-        }
+        // TODO seems like this could be extracted to the separate method
+        values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
+            if (daysRow.size <= 2 || daysRow[2] == "") // TODO to extract i should make this check different
+                return@forEachIndexed
 
-        subscribed.forEach {
-            val lastDay = it.indexOf("FALSE")
+            val lastDay = daysRow.indexOf("FALSE")
 
-            val sendMessage: SendMessage = if (lastDay == -1) {
-                SendMessage() // Create a SendMessage object with mandatory fields
-                        .setChatId(it[2].toString().toLong())
-                        .setText("Поздравляю! Вы уже закончили, а теперь пора отписываться.")
+            if (lastDay == -1) {
+                spreadSheetService.spreadsheets().values().update(
+                        hammertimeSheetId,
+                        "C${index + 2}",
+                        ValueRange().setValues(listOf(listOf("")))
+                ).setValueInputOption("USER_ENTERED").execute()
 
-                // TODO add unsubscription
+                execute(SendMessage()
+                        .setChatId(daysRow[2].toString().toLong())
+                        .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!"))
             } else {
                 val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
+                val columnNumberToA1Notation = SpreadSheetsHelpers.columnNumberToA1Notation(lastDay)
+                val updateCellA1Notation = "$columnNumberToA1Notation${index + 2}"
 
-                SendMessage() // Create a SendMessage object with mandatory fields
-                        .setChatId(it[2].toString().toLong())
-                        .setText("${it[1]}, напоминаю про время молотков.\n" +
-                                "Ссылка на сегодняшнюю статью: $linkToMaterial")
+                spreadSheetService.spreadsheets().values().update(
+                        hammertimeSheetId,
+                        updateCellA1Notation,
+                        ValueRange().setValues(listOf(listOf(true)))
+                ).setValueInputOption("USER_ENTERED").execute()
 
-                // TODO add keyboard here
+                execute(SendMessage()
+                        .setChatId(daysRow[2].toString().toLong())
+                        .setText("${daysRow[1]}, напоминаю про время молотков.\n" +
+                                "Ссылка на сегодняшнюю статью: $linkToMaterial"))
+
+                // TODO add custom keyboard here
             }
-
-            execute(sendMessage)
         }
-
-
-        // TODO Find the description of the last day, make a link to it
-        // TODO add custom keyboard to complete day, show next days and unsubscribe
     }
 
     private fun getMarathonSheet(): List<MutableList<Any>> {
@@ -153,8 +196,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                         "A:AM")
                 .execute()
 
-        val values = response.getValues()
-        return values
+        return response.getValues()
     }
 }
 
