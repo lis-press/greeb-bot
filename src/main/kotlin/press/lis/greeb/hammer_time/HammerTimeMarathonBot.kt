@@ -10,6 +10,8 @@ import org.telegram.telegrambots.meta.ApiContext
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Update
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow
 import press.lis.greeb.SheetsClient
 import press.lis.greeb.spreadsheets.SpreadSheetsHelpers
 
@@ -61,7 +63,8 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
                         execute(SendMessage()
                                 .setChatId(chatId)
-                                .setText("Поздравляю! Вы подписаны, утром напомню о статье!"))
+                                .setText("Поздравляю! Вы подписаны, утром напомню о статье!")
+                                .setReplyMarkup(replyKeyboardMarkup()))
 
                         return
                     }
@@ -101,7 +104,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                             .setChatId(chatId)
                             .setText("Не смог найти вас в таблице, похоже, вы уже отписаны!"))
                 }
-                "done" -> {
+                "Завершить текущий день" -> {
                     val chatId = update.message.chatId.toString()
 
                     val values = getMarathonSheet()
@@ -137,8 +140,44 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
                             execute(SendMessage() // Create a SendMessage object with mandatory fields
                                     .setChatId(daysRow[2].toString().toLong())
+                                    .setText("${daysRow[1]}, отметил день как выполненный.\n" +
+                                            "До завтра")
+                                    .setReplyMarkup(replyKeyboardMarkup()))
+                        }
+                    }
+                }
+                "Следующий день" -> {
+                    val chatId = update.message.chatId.toString()
+
+                    val values = getMarathonSheet()
+
+                    val header = values[0]
+
+                    values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
+                        if (daysRow.size <= 2 || daysRow[2] != chatId) // TODO to extract i should make this check different
+                            return@forEachIndexed
+
+                        val lastDay = daysRow.indexOf("FALSE")
+
+                        if (lastDay == -1) {
+                            spreadSheetService.spreadsheets().values().update(
+                                    hammertimeSheetId,
+                                    "C${index + 2}",
+                                    ValueRange().setValues(listOf(listOf("")))
+                            ).setValueInputOption("USER_ENTERED").execute()
+
+                            execute(SendMessage()
+                                    .setChatId(daysRow[2].toString().toLong())
+                                    .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!"))
+                        } else {
+                            val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
+
+                            execute(SendMessage()
+                                    .setChatId(daysRow[2].toString().toLong())
                                     .setText("${daysRow[1]}, напоминаю про время молотков.\n" +
-                                            "Ссылка на сегодняшнюю статью: $linkToMaterial"))
+                                            "Ссылка на сегодняшнюю статью: $linkToMaterial")
+                                    .setReplyMarkup(replyKeyboardMarkup()))
+
                         }
                     }
                 }
@@ -171,23 +210,31 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                         .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!"))
             } else {
                 val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
-                val columnNumberToA1Notation = SpreadSheetsHelpers.columnNumberToA1Notation(lastDay)
-                val updateCellA1Notation = "$columnNumberToA1Notation${index + 2}"
-
-                spreadSheetService.spreadsheets().values().update(
-                        hammertimeSheetId,
-                        updateCellA1Notation,
-                        ValueRange().setValues(listOf(listOf(true)))
-                ).setValueInputOption("USER_ENTERED").execute()
 
                 execute(SendMessage()
                         .setChatId(daysRow[2].toString().toLong())
                         .setText("${daysRow[1]}, напоминаю про время молотков.\n" +
-                                "Ссылка на сегодняшнюю статью: $linkToMaterial"))
+                                "Ссылка на сегодняшнюю статью: $linkToMaterial")
+                        .setReplyMarkup(replyKeyboardMarkup()))
 
-                // TODO add custom keyboard here
             }
         }
+    }
+
+    private fun replyKeyboardMarkup(): ReplyKeyboardMarkup {
+        val row1 = KeyboardRow()
+        row1.add("/unsubscribe")
+        val row2 = KeyboardRow()
+        row2.add("Следующий день")
+        val row3 = KeyboardRow()
+        row2.add("Завершить текущий день")
+
+        val rowArrayList = listOf(row1, row2, row3)
+
+        return ReplyKeyboardMarkup()
+                .setKeyboard(rowArrayList)
+                .setResizeKeyboard(true)
+                .setOneTimeKeyboard(true)
     }
 
     private fun getMarathonSheet(): List<MutableList<Any>> {

@@ -22,9 +22,9 @@ You should generate credentials on this page and add them to resources
 in order to set up in integration with google spreadsheets.
 
 
-### Clojure
+### Kotlin
 
-You can use clojure REPL together with files in your classpath.
+You can use Kotlin REPL together with files in your classpath.
 It can speed up development and experiments a bit.
 
 
