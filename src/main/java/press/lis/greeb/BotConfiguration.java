@@ -8,6 +8,7 @@ import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.ApiContext;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import press.lis.greeb.hammer_time.HammerTimeMarathonBot;
 
 /**
  * @author Aleksandr Eliseev
@@ -18,7 +19,7 @@ public class BotConfiguration {
     private static Integer PROXY_PORT = 1337;
 
     @Bean
-    public Bot createBot() {
+    public HammerTimeMarathonBot createBot() {
         final String bot_token = ConfigFactory.load().getString("bot.token");
         ApiContextInitializer.init();
 
@@ -31,7 +32,7 @@ public class BotConfiguration {
         // Select proxy type: [HTTP|SOCKS4|SOCKS5] (default: NO_PROXY)
         botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
 
-        final Bot bot = new Bot(bot_token, botOptions);
+        final HammerTimeMarathonBot bot = new HammerTimeMarathonBot(bot_token, botOptions);
 
         try {
             botsApi.registerBot(bot);
