@@ -4,4 +4,4 @@
 credentials*
 .nrepl-port
 tokens/
-greeb-bot.iml
+*.iml
