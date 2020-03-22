@@ -52,7 +52,8 @@ object SheetsClient {
                 .setDataStoreFactory(FileDataStoreFactory(File(TOKENS_DIRECTORY_PATH)))
                 .setAccessType("offline")
                 .build()
-        val receiver = LocalServerReceiver.Builder().setPort(8888).build()
+        val receiver = LocalServerReceiverDocker(8989)
+
         return AuthorizationCodeInstalledApp(flow, receiver).authorize("user")
     }
 
