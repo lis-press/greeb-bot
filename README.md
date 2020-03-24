@@ -18,8 +18,8 @@ to work with Telegram.
 The introduction done using:
 https://developers.google.com/sheets/api/quickstart/java
 
-You should generate credentials on this page and add them to resources
-in order to set up in integration with google spreadsheets.
+You should generate credentials on this page and add them to the root of 
+your repository in order to set up in integration with google spreadsheets.
 
 
 ### Kotlin
@@ -41,3 +41,35 @@ You may use VM options here:
 ```
 -Dbot.token={ADD_YOUR_TOKEN}
 ```
+
+## HammerTime Bot
+
+Bot for HammerTime marathon, reminds once a day about the next article.
+
+### Deploying the bot
+
+We're using the Docker to deploy bot.
+As for now the process is quite manual, but easy to automate.
+
+On the working machine (starting from root):
+```bash
+mvn clean package
+cd hammertime-bot
+docker build -t eliseealex/hammertime-bot:{LATEST VERSION} .
+docker push eliseealex/hammertime-bot
+```
+
+Change the Latest Version to the latest version via SemVer.
+
+On the server:
+```bash
+sudo docker pull eliseealex/hammertime-bot
+sudo docker run sudo docker run -p 8989:8989 \ 
+    -v /???/tokens:/usr/local/runme/tokens \
+    -v /???/credentials.json:/usr/local/runme/credentials.json \
+    -e "BOT_TOKEN=..." -t eliseealex/hammertime-bot:{LATEST VERSION}
+```
+
+Add bot token. Change the home directory to something
+
+Preconditions on server: copy the `credentials.json` to the server.

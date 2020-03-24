@@ -15,7 +15,7 @@ public class SchedulingService {
     private HammerTimeMarathonBot bot;
 
 
-    @Scheduled(cron = "*/5 * * * * *")
+    @Scheduled(cron = "0 0 7 * * *")
     public void executeSampleJob() {
         logger.info("Notifying subscribers");
 
