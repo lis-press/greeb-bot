@@ -190,10 +190,14 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
         val header = values[0]
 
+        var subscriberNumber = 0
+
         // TODO seems like this could be extracted to the separate method
         values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
             if (daysRow.size <= 2 || daysRow[2] == "") // TODO to extract i should make this check different
                 return@forEachIndexed
+
+            subscriberNumber++
 
             val lastDay = daysRow.indexOf("FALSE")
 
@@ -218,6 +222,10 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
             }
         }
+
+        execute(SendMessage()
+                .setChatId(-350941495)
+                .setText("$subscriberNumber человек подписано, всем напомнил :)"))
     }
 
     private fun replyKeyboardMarkup(): ReplyKeyboardMarkup {

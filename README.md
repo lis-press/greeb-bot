@@ -1,4 +1,4 @@
-Greeb — java telegram bot.
+Greeb — JVM-based telegram bots repository.
 
 ## Technology used
 
@@ -9,7 +9,7 @@ to work with Telegram.
   (via [#1](https://github.com/lis-press/greeb-bot/issues/1)).
 * Typesafe config to config from command line and Hocon language.
 * Slf4J with Logback for logging.
-* Clojure used to speed up experiments with current infrastructure.
+* Kotlin used to speed up experiments with current infrastructure.
 
 ## Configuration
 
