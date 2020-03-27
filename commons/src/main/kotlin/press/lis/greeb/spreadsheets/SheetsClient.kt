@@ -15,15 +15,14 @@ import com.google.api.client.util.store.FileDataStoreFactory
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.SheetsScopes
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.IOException
-import java.io.InputStreamReader
 
 object SheetsClient {
     private const val APPLICATION_NAME = "Google Sheets API Java Quickstart"
     private val JSON_FACTORY: JsonFactory = JacksonFactory.getDefaultInstance()
     private const val TOKENS_DIRECTORY_PATH = "tokens"
     private const val CREDENTIALS_FILE_PATH = "credentials.json"
+
     /**
      * Global instance of the scopes required by this quickstart.
      * If modifying these scopes, delete your previously saved tokens/ folder.
