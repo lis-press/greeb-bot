@@ -54,7 +54,6 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                                 daysRow[1].toString().toLowerCase().substring(1) != userName.toLowerCase())
                             return@forEachIndexed
 
-                        // TODO side effect in declaration seems bad
                         spreadSheetService.spreadsheets().values().update(
                                 hammertimeSheetId,
                                 "C${index + 2}",
@@ -81,12 +80,10 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                     val values = getMarathonSheet()
 
                     values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
-                        // TODO search by chat id
                         if (daysRow.size <= 2 ||
                                 daysRow[1].toString().toLowerCase().substring(1) != userName.toLowerCase())
                             return@forEachIndexed
 
-                        // TODO side effect in declaration seems bad
                         spreadSheetService.spreadsheets().values().update(
                                 hammertimeSheetId,
                                 "C${index + 2}",
@@ -109,8 +106,6 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
                     val values = getMarathonSheet()
 
-                    val header = values[0]
-
                     values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
                         if (daysRow.size <= 2 || daysRow[2] != chatId)
                             return@forEachIndexed
@@ -125,7 +120,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                             ).setValueInputOption("USER_ENTERED").execute()
 
                             execute(SendMessage()
-                                    .setChatId(daysRow[2].toString().toLong())   // TODO здесь я хотел бы здесь правильный фильтр
+                                    .setChatId(daysRow[2].toString().toLong())
                                     .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!"))
                         } else {
                             val columnNumberToA1Notation = SpreadSheetsHelpers.columnNumberToA1Notation(lastDay)
@@ -153,38 +148,16 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                     val header = values[0]
 
                     values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
-                        if (daysRow.size <= 2 || daysRow[2] != chatId) // TODO to extract i should make this check different
+                        if (daysRow.size <= 2 || daysRow[2] != chatId)
                             return@forEachIndexed
 
-                        val lastDay = daysRow.indexOf("FALSE")
-
-                        if (lastDay == -1) {
-                            spreadSheetService.spreadsheets().values().update(
-                                    hammertimeSheetId,
-                                    "C${index + 2}",
-                                    ValueRange().setValues(listOf(listOf("")))
-                            ).setValueInputOption("USER_ENTERED").execute()
-
-                            execute(SendMessage()
-                                    .setChatId(daysRow[2].toString().toLong())
-                                    .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!"))
-                        } else {
-                            val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
-
-                            execute(SendMessage()
-                                    .setChatId(daysRow[2].toString().toLong())
-                                    .setText("${daysRow[1]}, напоминаю про время молотков.\n" +
-                                            "Ссылка на сегодняшнюю статью: $linkToMaterial")
-                                    .setReplyMarkup(replyKeyboardMarkup()))
-
-                        }
+                        notifyUser(daysRow, index, header)
                     }
                 }
             }
         }
     }
 
-    // TODO add the cron configuration for this method
     fun notifySubscribers() {
         val values = getMarathonSheet()
 
@@ -192,40 +165,43 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
         var subscriberNumber = 0
 
-        // TODO seems like this could be extracted to the separate method
         values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
-            if (daysRow.size <= 2 || daysRow[2] == "") // TODO to extract i should make this check different
+            if (daysRow.size <= 2 || daysRow[2] == "")
                 return@forEachIndexed
 
             subscriberNumber++
 
-            val lastDay = daysRow.indexOf("FALSE")
-
-            if (lastDay == -1) {
-                spreadSheetService.spreadsheets().values().update(
-                        hammertimeSheetId,
-                        "C${index + 2}",
-                        ValueRange().setValues(listOf(listOf("")))
-                ).setValueInputOption("USER_ENTERED").execute()
-
-                execute(SendMessage()
-                        .setChatId(daysRow[2].toString().toLong())
-                        .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!"))
-            } else {
-                val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
-
-                execute(SendMessage()
-                        .setChatId(daysRow[2].toString().toLong())
-                        .setText("${daysRow[1]}, напоминаю про время молотков.\n" +
-                                "Ссылка на сегодняшнюю статью: $linkToMaterial")
-                        .setReplyMarkup(replyKeyboardMarkup()))
-
-            }
+            notifyUser(daysRow, index, header)
         }
 
         execute(SendMessage()
                 .setChatId(-350941495)
                 .setText("$subscriberNumber человек подписано, всем напомнил :)"))
+    }
+
+    private fun notifyUser(daysRow: List<Any>, index: Int, header: List<Any>) {
+        val lastDay = daysRow.indexOf("FALSE")
+
+        if (lastDay == -1) {
+            spreadSheetService.spreadsheets().values().update(
+                    hammertimeSheetId,
+                    "C${index + 2}",
+                    ValueRange().setValues(listOf(listOf("")))
+            ).setValueInputOption("USER_ENTERED").execute()
+
+            execute(SendMessage()
+                    .setChatId(daysRow[2].toString().toLong())
+                    .setText("Поздравляю! Вы уже закончили, теперь вы отписаны!"))
+        } else {
+            val linkToMaterial = HammerTimeMarathonConstants.links[header[lastDay]]
+
+            execute(SendMessage()
+                    .setChatId(daysRow[2].toString().toLong())
+                    .setText("${daysRow[1]}, напоминаю про время молотков.\n" +
+                            "Ссылка на сегодняшнюю статью: $linkToMaterial")
+                    .setReplyMarkup(replyKeyboardMarkup()))
+
+        }
     }
 
     private fun replyKeyboardMarkup(): ReplyKeyboardMarkup {
@@ -244,7 +220,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                 .setOneTimeKeyboard(true)
     }
 
-    private fun getMarathonSheet(): List<MutableList<Any>> {
+    private fun getMarathonSheet(): List<List<Any>> {
         val response = spreadSheetService.spreadsheets().values()
                 .get(hammertimeSheetId,
                         "A:AM")
