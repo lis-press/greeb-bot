@@ -51,6 +51,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
                     values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
                         if (daysRow.size <= 2 ||
+                                daysRow[1].toString().isEmpty() ||
                                 daysRow[1].toString().toLowerCase().substring(1) != userName.toLowerCase())
                             return@forEachIndexed
 
@@ -81,6 +82,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
 
                     values.subList(1, values.size - 1).forEachIndexed { index, daysRow ->
                         if (daysRow.size <= 2 ||
+                                daysRow[1].toString().isEmpty() ||
                                 daysRow[1].toString().toLowerCase().substring(1) != userName.toLowerCase())
                             return@forEachIndexed
 
