@@ -47,10 +47,12 @@ public class Bot extends TelegramLongPollingBot {
         if (update.getCallbackQuery() != null) {
             CallbackQuery query = update.getCallbackQuery();
             AnswerCallbackQuery answer = inlineQueryProcessor.createReactionOnInlineAnswer(query);
-            try {
-                execute(answer);
-            } catch (TelegramApiException e) {
-                logger.error("Can't send a message!", e);
+            if (answer != null) {
+                try {
+                    execute(answer);
+                } catch (TelegramApiException e) {
+                    logger.error("Can't send a message!", e);
+                }
             }
         }
 
@@ -62,7 +64,7 @@ public class Bot extends TelegramLongPollingBot {
 
             SendMessage message = new SendMessage() // Create a SendMessage object with mandatory fields
                     .setChatId(userChatId)
-                    .setText("You've been subscribed to dates :)");
+                    .setText("You've been subscribed to friendly questions :)");
             try {
                 execute(message); // Call method to send the message
             } catch (TelegramApiException e) {

@@ -28,12 +28,12 @@ public class BotConfiguration {
     static {
         buttonTexts.add(new ArrayList<>(2));
         buttonTexts.add(new ArrayList<>(1));
-        buttonTexts.get(0).add("Will go!");
-        buttonTexts.get(0).add("Wouldn't go =(");
-        buttonTexts.get(1).add("Dunno...");
-        reactionsMap.put(buttonTexts.get(0).get(0), "Cool");
+        buttonTexts.get(0).add("Really good!");
+        buttonTexts.get(0).add("Not as good as I want =(");
+        buttonTexts.get(1).add("Average...");
+        reactionsMap.put(buttonTexts.get(0).get(0), "Cool!");
         reactionsMap.put(buttonTexts.get(0).get(1), "Disappointing =(");
-        reactionsMap.put(buttonTexts.get(1).get(0), "Hmmmm...");
+        reactionsMap.put(buttonTexts.get(1).get(0), "Okay...");
     }
 
     @Bean

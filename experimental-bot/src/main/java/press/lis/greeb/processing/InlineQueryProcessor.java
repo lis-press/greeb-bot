@@ -20,7 +20,12 @@ public class InlineQueryProcessor {
     public AnswerCallbackQuery createReactionOnInlineAnswer(CallbackQuery update) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery();
         answer.setCallbackQueryId(update.getId());
-        answer.setText(answerMap.get(update.getData()));
+        String text = answerMap.get(update.getData());
+        if (text != null) {
+            answer.setText(answerMap.get(update.getData()));
+        } else {
+            return null;
+        }
         return answer;
     }
 
