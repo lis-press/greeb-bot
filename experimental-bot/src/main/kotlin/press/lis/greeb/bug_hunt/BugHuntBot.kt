@@ -13,6 +13,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 import press.lis.greeb.spreadsheets.SheetsClient
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * @author Aleksandr Eliseev
@@ -24,6 +26,7 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
     private val bugHuntSheetId = "1u1pQx3RqqOFX-rr3Wuajyts_ufCeIQ21Mu0ndXCdv2M"
 
     private val currentIterator: Iterator<List<Any>> = getBugHuntSheet().iterator()
+    private val header: List<Any> = currentIterator.next()
 
 
     override fun getBotUsername(): String {
@@ -46,26 +49,62 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
                     .setChatId(userChatId)
 
             when (inputText) {
-                "nw", "тц", "]", "ъ" -> sendMessage.text = "Scheduling to the next week"
+                "nw", "тц", "]", "ъ" -> sendMessage.text = "Scheduling to the next week" // TODO запилить разбор багов
                 "nm", "ть", "[", "х" -> sendMessage.text = "Scheduling to the next month"
-                else -> {       // TODO -> here I can make a comment
+                "\\", "ё", "n", "/next", "Next bug" -> {
                     logger.debug("Got message: {}", update)
                     val nextRow: List<Any> = currentIterator.next() // TODO here I can make better formatting
-                    val message = String.format("%s\n\n\n/next", nextRow)
+
+                    val bug = nextRow.getOrNull(0)
+                    val hardness = nextRow.getOrNull(1)
+                    val field = nextRow.getOrNull(4)
+                    val solution = nextRow.getOrNull(5)
+                    val commentary = nextRow.getOrNull(6)
+                    val nextTime = nextRow.getOrNull(7)
+
+                    val message = """
+                        *Bug:* $bug
+                        
+                        Should check since: $nextTime
+                        Hardness: $hardness 
+                        Field: $field
+                        
+                        Solution: $solution
+                        
+                        *Commentary:*
+                        %s
+                        
+                        
+                        
+                        Go to the /next bug
+                    """.trimIndent().format(commentary) // Formatting is needed for multiline comments
+
+                    logger.info("Trying to send:\n$message")
+
                     sendMessage.text = message
+                    sendMessage.enableMarkdown(true)
 
                     // TODO would like builder-like interface instead :(
-                    val row = KeyboardRow()
-                    row.add("Next month")
-                    row.add("Next week")
-                    // TODO Add
-                    val rowArrayList = listOf(row)
+                    val row1 = KeyboardRow()
+                    row1.add("Next month")
+                    row1.add("Next week")
+                    val row2 = KeyboardRow()
+                    row2.add("Next bug")
+
+                    val rowArrayList = listOf(row1, row2)
 
                     val keyboard = ReplyKeyboardMarkup()
                             .setKeyboard(rowArrayList)
                             .setResizeKeyboard(true)
                             .setOneTimeKeyboard(true)
                     sendMessage.replyMarkup = keyboard
+                }
+
+                else -> {
+                    sendMessage.text = """
+                        Will add to the comment:
+                        ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE)} -> $inputText
+                    """.trimIndent()
                 }
             }
 
