@@ -11,9 +11,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import press.lis.greeb.processing.AnswerKeyboardAttacher;
 import press.lis.greeb.processing.InlineQueryProcessor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Aleksandr Eliseev
@@ -22,19 +20,13 @@ import java.util.Map;
 public class BotConfiguration {
     private static String PROXY_HOST = "localhost";
     private static Integer PROXY_PORT = 1337;
-    private static ArrayList<ArrayList<String>> buttonTexts = new ArrayList<>();
-    private static Map<String, String> reactionsMap = new HashMap<>();
-
-    static {
-        buttonTexts.add(new ArrayList<>(2));
-        buttonTexts.add(new ArrayList<>(1));
-        buttonTexts.get(0).add("Really good!");
-        buttonTexts.get(0).add("Not as good as I want =(");
-        buttonTexts.get(1).add("Average...");
-        reactionsMap.put(buttonTexts.get(0).get(0), "Cool!");
-        reactionsMap.put(buttonTexts.get(0).get(1), "Disappointing =(");
-        reactionsMap.put(buttonTexts.get(1).get(0), "Okay...");
-    }
+    private static List<List<String>> buttonTexts = Arrays.asList(
+            Arrays.asList("Really good!", "Not as good as I want =("),
+            Arrays.asList("Average..."));
+    private static Map<String, String> reactionsMap = Map.ofEntries(
+            Map.entry(buttonTexts.get(0).get(0), "Cool!"),
+            Map.entry(buttonTexts.get(0).get(1), "Disappointing =("),
+            Map.entry(buttonTexts.get(1).get(0), "Okay..."));
 
     @Bean
     public Bot createBot() {

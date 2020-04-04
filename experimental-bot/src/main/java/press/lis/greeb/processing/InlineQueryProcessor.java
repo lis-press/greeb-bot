@@ -9,15 +9,15 @@ import java.util.Map;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class InlineQueryProcessor {
-    private static Logger logger = getLogger(InlineQueryProcessor.class);
+    private final static Logger LOGGER = getLogger(InlineQueryProcessor.class);
 
-    private Map<String, String> answerMap;
+    private final Map<String, String> answerMap;
 
-    public InlineQueryProcessor(Map answerMap) {
+    public InlineQueryProcessor(final Map<String, String> answerMap) {
         this.answerMap = answerMap;
     }
 
-    public AnswerCallbackQuery createReactionOnInlineAnswer(CallbackQuery update) {
+    public AnswerCallbackQuery createReactionOnInlineAnswer(final CallbackQuery update) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery();
         answer.setCallbackQueryId(update.getId());
         String text = answerMap.get(update.getData());

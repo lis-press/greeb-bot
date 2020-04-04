@@ -16,9 +16,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * @author Aleksandr Eliseev
  */
 public class Bot extends TelegramLongPollingBot {
-    private static final Logger logger = LoggerFactory.getLogger(Bot.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Bot.class);
     private final String bot_token;
 
     private final Set<Long> subscribedUsers = new HashSet<>();
@@ -37,13 +38,13 @@ public class Bot extends TelegramLongPollingBot {
     }
 
     public static void main(String[] args) {
-        logger.info("Started");
+        LOGGER.info("Started");
 
         new BotConfiguration().createBot();
     }
 
     public void onUpdateReceived(final Update update) {
-        logger.debug("Got update: {}", update);
+        LOGGER.debug("Got update: {}", update);
         if (update.getCallbackQuery() != null) {
             CallbackQuery query = update.getCallbackQuery();
             AnswerCallbackQuery answer = inlineQueryProcessor.createReactionOnInlineAnswer(query);
@@ -51,7 +52,7 @@ public class Bot extends TelegramLongPollingBot {
                 try {
                     execute(answer);
                 } catch (TelegramApiException e) {
-                    logger.error("Can't send a message!", e);
+                    LOGGER.error("Can't send a message!", e);
                 }
             }
         }
@@ -68,7 +69,7 @@ public class Bot extends TelegramLongPollingBot {
             try {
                 execute(message); // Call method to send the message
             } catch (TelegramApiException e) {
-                logger.warn("Can't send a message", e);
+                LOGGER.warn("Can't send a message", e);
             }
         }
     }
@@ -84,7 +85,7 @@ public class Bot extends TelegramLongPollingBot {
             try {
                 execute(sendMessage); // Call method to send the message
             } catch (TelegramApiException e) {
-                logger.warn("Can't send a message", e);
+                LOGGER.warn("Can't send a message", e);
             }
         }
     }

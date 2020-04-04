@@ -11,25 +11,25 @@ import java.util.List;
 
 public class AnswerKeyboardAttacher {
 
-    private final ArrayList<ArrayList<String>> buttonTexts;
+    private final List<List<String>> buttonTexts;
 
-    public AnswerKeyboardAttacher(final ArrayList<ArrayList<String>> buttonTexts) {
+    public AnswerKeyboardAttacher(final List<List<String>> buttonTexts) {
         this.buttonTexts = buttonTexts;
     }
 
-    public SendMessage attachKeyboard(SendMessage message) {
+    public SendMessage attachKeyboard(final SendMessage message) {
 
-        ArrayList<KeyboardRow> rowArrayList = new ArrayList<>(buttonTexts.size());
-        for (ArrayList<String> buttonText : buttonTexts) {
+        List<KeyboardRow> rowList = new ArrayList<>(buttonTexts.size());
+        for (List<String> buttonText : buttonTexts) {
             KeyboardRow row = new KeyboardRow();
-            for (int j = 0; j < buttonText.size(); j++) {
-                row.add(j, buttonText.get(j));
+            for (String text : buttonText) {
+                row.add(text);
             }
-            rowArrayList.add(row);
+            rowList.add(row);
         }
 
         ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup()
-                .setKeyboard(rowArrayList)
+                .setKeyboard(rowList)
                 .setResizeKeyboard(true)
                 .setOneTimeKeyboard(true);
 
@@ -37,16 +37,16 @@ public class AnswerKeyboardAttacher {
 
     }
 
-    public SendMessage attachInlineKeyboard(SendMessage message) {
+    public SendMessage attachInlineKeyboard(final SendMessage message) {
 
-        List<List<InlineKeyboardButton>> buttonsArray = new ArrayList<>(buttonTexts.size());
-        for (ArrayList<String> buttonText : buttonTexts) {
-            ArrayList<InlineKeyboardButton> row = new ArrayList<>(buttonText.size());
-            for (int j = 0; j < buttonText.size(); j++) {
+        final List<List<InlineKeyboardButton>> buttonsArray = new ArrayList<>(buttonTexts.size());
+        for (List<String> buttonText : buttonTexts) {
+            List<InlineKeyboardButton> row = new ArrayList<>(buttonText.size());
+            for (String text : buttonText) {
                 InlineKeyboardButton button = new InlineKeyboardButton();
-                button.setText(buttonText.get(j));
-                button.setCallbackData(buttonText.get(j));
-                row.add(j, button);
+                button.setText(text);
+                button.setCallbackData(text);
+                row.add(button);
             }
             buttonsArray.add(row);
         }
