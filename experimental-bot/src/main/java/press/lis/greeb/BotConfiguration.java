@@ -23,10 +23,13 @@ public class BotConfiguration {
     private static List<List<String>> buttonTexts = Arrays.asList(
             Arrays.asList("Really good!", "Not as good as I want =("),
             Arrays.asList("Average..."));
-    private static Map<String, String> reactionsMap = Map.ofEntries(
-            Map.entry(buttonTexts.get(0).get(0), "Cool!"),
-            Map.entry(buttonTexts.get(0).get(1), "Disappointing =("),
-            Map.entry(buttonTexts.get(1).get(0), "Okay..."));
+    private static Map<String, String> reactionsMap = new HashMap<>();
+
+    static { //TODO: when 9+ Java comes, get rid of that static initialization block (substitute on inline initialization)!
+        reactionsMap.put(buttonTexts.get(0).get(0), "Cool!");
+        reactionsMap.put(buttonTexts.get(0).get(1), "Disappointing =(");
+        reactionsMap.put(buttonTexts.get(1).get(0), "Okay...");
+    }
 
     @Bean
     public Bot createBot() {
