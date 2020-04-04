@@ -55,9 +55,7 @@ public class Bot extends TelegramLongPollingBot {
                     LOGGER.error("Can't send a message!", e);
                 }
             }
-        }
-
-        if (update.hasMessage() && update.getMessage().hasText() &&
+        } else if (update.hasMessage() && update.getMessage().hasText() &&
         update.getMessage().getText().equals("/subscribe")) {
 
             final Long userChatId = update.getMessage().getChatId();
