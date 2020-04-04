@@ -142,7 +142,8 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                         }
                     }
                 }
-                "Следующий день" -> {
+                "Следующий день", // TODO only for backward compatibility
+                "Показать текущий день" -> {
                     val chatId = update.message.chatId.toString()
 
                     val values = getMarathonSheet()
@@ -210,7 +211,7 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
         val row1 = KeyboardRow()
         row1.add("/unsubscribe")
         val row2 = KeyboardRow()
-        row2.add("Следующий день")
+        row2.add("Показать текущий день")
         val row3 = KeyboardRow()
         row2.add("Завершить текущий день")
 
