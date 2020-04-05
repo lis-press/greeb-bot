@@ -142,7 +142,6 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                         }
                     }
                 }
-                "Следующий день", // TODO only for backward compatibility
                 "Показать текущий день" -> {
                     val chatId = update.message.chatId.toString()
 
