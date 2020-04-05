@@ -23,6 +23,6 @@ public class SampleJobService {
     public void executeSampleJob() {
         logger.info("Notifying subscribers");
 
-        bot.pingSubscribers("Hey there");
+        bot.pingSubscribers("Hello, friend!\nHow do you do?");
     }
 }

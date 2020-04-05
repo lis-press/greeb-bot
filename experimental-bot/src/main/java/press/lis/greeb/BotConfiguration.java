@@ -8,6 +8,10 @@ import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.ApiContext;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import press.lis.greeb.processing.AnswerKeyboardAttacher;
+import press.lis.greeb.processing.InlineQueryProcessor;
+
+import java.util.*;
 
 /**
  * @author Aleksandr Eliseev
@@ -16,6 +20,16 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 public class BotConfiguration {
     private static String PROXY_HOST = "localhost";
     private static Integer PROXY_PORT = 1337;
+    private static List<List<String>> buttonTexts = Arrays.asList(
+            Arrays.asList("Really good!", "Not as good as I want =("),
+            Arrays.asList("Average..."));
+    private static Map<String, String> reactionsMap = new HashMap<>();
+
+    static { //TODO: when 9+ Java comes, get rid of that static initialization block (substitute on inline initialization)!
+        reactionsMap.put(buttonTexts.get(0).get(0), "Cool!");
+        reactionsMap.put(buttonTexts.get(0).get(1), "Disappointing =(");
+        reactionsMap.put(buttonTexts.get(1).get(0), "Okay...");
+    }
 
     @Bean
     public Bot createBot() {
@@ -31,7 +45,11 @@ public class BotConfiguration {
         // Select proxy type: [HTTP|SOCKS4|SOCKS5] (default: NO_PROXY)
         botOptions.setProxyType(DefaultBotOptions.ProxyType.SOCKS5);
 
-        final Bot bot = new Bot(bot_token, botOptions);
+        final AnswerKeyboardAttacher attacher = new AnswerKeyboardAttacher(buttonTexts);
+
+        final InlineQueryProcessor processor = new InlineQueryProcessor(reactionsMap);
+
+        final Bot bot = new Bot(bot_token, botOptions, processor, attacher);
 
         try {
             botsApi.registerBot(bot);
