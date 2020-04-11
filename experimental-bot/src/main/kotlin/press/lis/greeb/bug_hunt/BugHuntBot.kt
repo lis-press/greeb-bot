@@ -68,6 +68,14 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
                     sendMessage.text = "Scheduled to the next week"
                     updateNextCheckDate(nowDate.plusDays(7).format(dateTimeFormatter))
                 }
+                "]]", "ъъ" -> {
+                    sendMessage.text = "Scheduled in two week"
+                    updateNextCheckDate(nowDate.plusDays(14).format(dateTimeFormatter))
+                }
+                "]]]", "ъъъ" -> {
+                    sendMessage.text = "Scheduled in three weeks"
+                    updateNextCheckDate(nowDate.plusDays(21).format(dateTimeFormatter))
+                }
                 "nm", "ть", "[", "х", "Next month" -> {
                     sendMessage.text = "Scheduling to the next month"
                     updateNextCheckDate(nowDate.plusMonths(1).format(dateTimeFormatter))
