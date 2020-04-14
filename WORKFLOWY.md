@@ -2,7 +2,7 @@
 
 WorkFlowy doesn't have official API but we can use internal methods, used on FrontEnd.
 
-In this doc I will show how to use it, will use `curl` + `gron` in order to demonstrate examples.
+In this doc I will show how to use it, will use `curl` in order to demonstrate examples.
 
 ## Authorization
 

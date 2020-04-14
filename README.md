@@ -1,5 +1,15 @@
 Greeb — JVM-based telegram bots repository.
 
+Integrate Telegram, Spreadhseets and WorkFlowy to automate our routines.
+
+Our main focus is making our code and documentation 
+as easy and illustrative as possible. So that we can
+share our knowledge about technologies and development best practices.
+
+Common code should be abstract and well thought, projects/experiment can be
+fast and dirty though development and deployment process should be carefully
+ documented in any case. 
+
 ## Technology used
 
 * [TelegramBots](https://github.com/rubenlagus/TelegramBots)
@@ -21,17 +31,17 @@ https://developers.google.com/sheets/api/quickstart/java
 You should generate credentials on this page and add them to the root of 
 your repository in order to set up in integration with google spreadsheets.
 
-
 ### Kotlin
 
 You can use Kotlin REPL together with files in your classpath.
 It can speed up development and experiments a bit.
 
-
 ### Proxy
 
-As for now, you need to have a Socks 5 proxy on 1337 port
+By default we use a Socks 5 proxy on 1337 port
 to connect to Telegram API.
+
+You can use `-Dbot.no_proxy=true` to turn proxy off (in hammertime bot).
 
 ### Token
 
