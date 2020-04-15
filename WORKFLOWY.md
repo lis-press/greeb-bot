@@ -1,8 +1,8 @@
-# How to work with WorkFlowy internal API?
+# Reading WorkFlowy data via internal API?
 
 WorkFlowy doesn't have official API but we can use internal methods, used on FrontEnd.
 
-In this doc I will show how to use it, will use `curl` in order to demonstrate examples.
+In this doc I will show how to use it to read data, will use `curl` in order to demonstrate examples.
 
 ## Authorization
 
@@ -165,5 +165,27 @@ The result looks like:
 }
 ```
 
-## Writing data to WorkFlowy 
-TBA
+## Writing data to WorkFlowy
+
+Write queries look a bit harder. The structure of the query for write looks like this to create new item (post parameters):
+```
+client_id: 2020-04-15 18:01:21.955972
+client_version: 21
+push_poll_id: W8UuHzAp
+push_poll_data: [{"most_recent_operation_transaction_id":"1140946069","operations":[{"type":"create","data":{"projectid":"5fa15ff3-fcf7-00f3-fba7-9c3a8b919294","parentid":"12506e1f-1913-1f38-6b8a-9d07cc575913","priority":0,"isForSearch":false},"client_timestamp":146146061,"undo_data":{}}]}]
+crosscheck_user_id: 118
+```
+
+Edition of text looks like this (post parameters):
+```
+client_id: 2020-04-15 18:01:21.955972
+client_version: 21
+push_poll_id: zDBqb1br
+push_poll_data: [{"most_recent_operation_transaction_id":"1140946245","operations":[{"type":"edit","data":{"projectid":"5fa15ff3-fcf7-00f3-fba7-9c3a8b919294","metadataPatches":[],"metadataInversePatches":[],"name":"Test"},"client_timestamp":146146064,"undo_data":{"previous_last_modified":146146061,"previous_last_modified_by":null,"previous_name":"","metadataPatches":[]}}]}]
+crosscheck_user_id: 118
+```
+
+I guess you can combine them together in one query.
+
+Generally, can generate this using CURL, but the variables would be helpful here.
+These operations are quite easy too, for example you can use [JS implementation](https://github.com/malcolmocean/opusfluxus).
