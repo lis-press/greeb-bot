@@ -3,6 +3,7 @@ package press.lis.greeb.bug_hunt
 import com.google.api.services.sheets.v4.model.ValueRange
 import com.typesafe.config.ConfigFactory
 import mu.KotlinLogging
+import org.slf4j.LoggerFactory
 import org.telegram.telegrambots.ApiContextInitializer
 import org.telegram.telegrambots.bots.DefaultBotOptions
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
@@ -29,9 +30,19 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
 
     private val dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    private val bugHuntIterator: Iterator<IndexedValue<List<Any>>> = getBugHuntSheet().withIndex().iterator()
-    private val header: IndexedValue<List<Any>> = bugHuntIterator.next()
-    private var currentRowIndexed: IndexedValue<List<Any>> = header
+    private lateinit var bugHuntIterator: Iterator<IndexedValue<List<Any>>>
+    private lateinit var header: IndexedValue<List<Any>>
+    private lateinit var currentRowIndexed: IndexedValue<List<Any>>
+
+    private fun initializeBugHuntSheets() {
+        bugHuntIterator = getBugHuntSheet().withIndex().iterator()
+        header = bugHuntIterator.next()
+        currentRowIndexed = header
+    }
+
+    init {
+        initializeBugHuntSheets()
+    }
 
 
     override fun getBotUsername(): String {
@@ -53,7 +64,8 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
     override fun onUpdateReceived(update: Update?) {
         logger.info { "Got Update $update" }
 
-        if (update?.message?.text != null) {
+        // Used only for me, ignore anyone else, to ensure nothing wrong happening
+        if (update?.message?.text != null && update.message.from.userName == "eliseealex") {
             val inputText = update.message.text
 
             val userChatId = update.message.chatId
@@ -84,38 +96,16 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
                     sendMessage.text = "Scheduling to the month after the next"
                     updateNextCheckDate(nowDate.plusMonths(2).format(dateTimeFormatter))
                 }
+                // TODO возможно, стоит вынести на клавиатуру
+                "c", "с", "clear" -> {
+                    initializeBugHuntSheets()
+
+                    val message = getNextMessage()
+                    sendMessage.text = "*Cleared*\n\n$message"
+                    sendMessage.enableMarkdown(true)
+                }
                 "\\", "ё", "n", "/next", "Next bug" -> {
-                    logger.debug("Got message: {}", update)
-
-                    // TODO по умолчанию пропускать те баги, которые отложены
-                    currentRowIndexed = bugHuntIterator.next()
-                    val currentRow: List<Any> = currentRowIndexed.value
-
-                    val bug = currentRow.getOrNull(0)
-                    val hardness = currentRow.getOrNull(1)
-                    val field = currentRow.getOrNull(4)
-                    val solution = currentRow.getOrNull(5)
-                    val comment = currentRow.getOrNull(6)
-                    val nextTime = currentRow.getOrNull(7)
-
-                    val message = """
-                        *Bug:* $bug
-                        
-                        Should check since: $nextTime
-                        Hardness: $hardness 
-                        Field: $field
-                        
-                        Solution: $solution
-                        
-                        *Commentary:*
-                        %s
-                        
-                        
-                        
-                        Go to the /next bug
-                    """.trimIndent().format(comment) // Formatting is needed for multiline comments
-
-                    logger.info("Trying to send:\n$message")
+                    val message = getNextMessage()
 
                     sendMessage.text = message
                     sendMessage.enableMarkdown(true)
@@ -173,6 +163,39 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
         }
     }
 
+    private fun getNextMessage(): String {
+        // TODO по умолчанию пропускать те баги, которые отложены -> можно не пропускать, если сброшено специальным образом
+        currentRowIndexed = bugHuntIterator.next()
+        val currentRow: List<Any> = currentRowIndexed.value
+
+        val bug = currentRow.getOrNull(0)
+        val hardness = currentRow.getOrNull(1)
+        val field = currentRow.getOrNull(4)
+        val solution = currentRow.getOrNull(5)
+        val comment = currentRow.getOrNull(6)
+        val nextTime = currentRow.getOrNull(7)
+
+        val message = """
+                            *Bug:* $bug
+                            
+                            Should check since: $nextTime
+                            Hardness: $hardness 
+                            Field: $field
+                            
+                            Solution: $solution
+                            
+                            *Commentary:*
+                            %s
+                            
+                            
+                            
+                            Go to the /next bug
+                        """.trimIndent().format(comment) // Formatting is needed for multiline comments
+
+        logger.info("Trying to send:\n$message")
+        return message
+    }
+
     private fun getBugHuntSheet(): List<List<Any>> {
         val response = spreadSheetService.spreadsheets().values()
                 .get(bugHuntSheetId,
@@ -184,18 +207,27 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
 }
 
 fun main() {
+    val logger = LoggerFactory.getLogger(BugHuntBot::class.java)
+
     println("Started")
 
-    val botToken = ConfigFactory.load().getString("bot.token")
+    val configFactory = ConfigFactory.load()
+    val botToken = configFactory.getString("bot.token")
     ApiContextInitializer.init()
 
     val botsApi = TelegramBotsApi()
 
     val botOptions = ApiContext.getInstance(DefaultBotOptions::class.java)
 
-    botOptions.proxyHost = "localhost"
-    botOptions.proxyPort = 1337
-    botOptions.proxyType = DefaultBotOptions.ProxyType.SOCKS5
+
+    if (!configFactory.hasPath("bot.no_proxy") || !configFactory.getBoolean("bot.no_proxy")) {
+        logger.info("Setting up proxy")
+        botOptions.proxyHost = "localhost"
+        botOptions.proxyPort = 1337
+        botOptions.proxyType = DefaultBotOptions.ProxyType.SOCKS5
+    } else {
+        logger.info("No proxy configured")
+    }
 
     val bugHuntBot = BugHuntBot(botToken, botOptions)
 
