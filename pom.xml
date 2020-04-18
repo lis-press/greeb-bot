@@ -12,6 +12,7 @@
         <module>hammertime-bot</module>
         <module>experimental-bot</module>
         <module>commons</module>
+        <module>bug-hunt-bot</module>
     </modules>
 
     <properties>
