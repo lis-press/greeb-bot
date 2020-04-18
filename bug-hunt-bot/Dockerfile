@@ -14,6 +14,4 @@ COPY ${JAR_FILE} app.jar
 ADD ${JAR_LIB_FILE} lib/
 
 # java -jar /usr/local/runme/app.jar
-ENTRYPOINT java -Dbot.token=${BOT_TOKEN} \
-  -Dbot.chatId=${BOT_CHAT_ID} \
-  -Dbot.no_proxy=true -jar app.jar
+ENTRYPOINT java -Dbot.token=${BOT_TOKEN} -Dbot.no_proxy=true -jar app.jar
