@@ -1,14 +1,9 @@
 package press.lis.greeb.bug_hunt
 
 import com.google.api.services.sheets.v4.model.ValueRange
-import com.typesafe.config.ConfigFactory
 import mu.KotlinLogging
-import org.slf4j.LoggerFactory
-import org.telegram.telegrambots.ApiContextInitializer
 import org.telegram.telegrambots.bots.DefaultBotOptions
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
-import org.telegram.telegrambots.meta.ApiContext
-import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup
@@ -17,6 +12,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 import press.lis.greeb.spreadsheets.SheetsClient
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 
 /**
@@ -204,32 +200,20 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
 
         return response.getValues()
     }
-}
 
-fun main() {
-    val logger = LoggerFactory.getLogger(BugHuntBot::class.java)
+    // TODO not sure whether to write my id
+    fun sendStatistics() {
+        val bugHuntSheet = getBugHuntSheet()
+        logger.info("Started to send statistics")
 
-    println("Started")
+        for (row in bugHuntSheet) {
+            val nextTime = row.getOrNull(7)
 
-    val configFactory = ConfigFactory.load()
-    val botToken = configFactory.getString("bot.token")
-    ApiContextInitializer.init()
+            if (nextTime == Date()) {
+                logger.info("Have a bug to notify about: $row")
+            }
+        }
 
-    val botsApi = TelegramBotsApi()
-
-    val botOptions = ApiContext.getInstance(DefaultBotOptions::class.java)
-
-
-    if (!configFactory.hasPath("bot.no_proxy") || !configFactory.getBoolean("bot.no_proxy")) {
-        logger.info("Setting up proxy")
-        botOptions.proxyHost = "localhost"
-        botOptions.proxyPort = 1337
-        botOptions.proxyType = DefaultBotOptions.ProxyType.SOCKS5
-    } else {
-        logger.info("No proxy configured")
+        initializeBugHuntSheets()
     }
-
-    val bugHuntBot = BugHuntBot(botToken, botOptions)
-
-    botsApi.registerBot(bugHuntBot)
 }

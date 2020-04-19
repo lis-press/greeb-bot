@@ -26,7 +26,6 @@ class BugHuntBotConfiguration {
     fun createBot(): BugHuntBot {
         val configFactory = ConfigFactory.load()
         val botToken = configFactory.getString("bot.token")
-        val chatId = configFactory.getLong("bot.chatId")
 
         ApiContextInitializer.init()
 
@@ -43,11 +42,7 @@ class BugHuntBotConfiguration {
             logger.info("No proxy configured")
         }
 
-        val bot = BugHuntBot(
-                botToken = botToken,
-                chatId = chatId,
-                options = botOptions)
-
+        val bot = BugHuntBot(botToken, botOptions)
         try {
             botsApi.registerBot(bot)
         } catch (e: TelegramApiException) {
@@ -59,5 +54,6 @@ class BugHuntBotConfiguration {
 }
 
 fun main() {
-    BugHuntBotConfiguration().createBot()
+    val bot = BugHuntBotConfiguration().createBot()
+    bot.sendStatistics()
 }
