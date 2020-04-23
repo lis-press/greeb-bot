@@ -12,14 +12,14 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 import press.lis.greeb.spreadsheets.SheetsClient
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
 
 
 /**
  * @author Aleksandr Eliseev
  */
-class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPollingBot(options) {
+class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : TelegramLongPollingBot(options) {
     private val botTokenInternal: String = botToken
+    private val chatIdInternal: Long = chatId
     private val logger = KotlinLogging.logger {}
     private val spreadSheetService = SheetsClient.sheetService
     private val bugHuntSheetId = "1u1pQx3RqqOFX-rr3Wuajyts_ufCeIQ21Mu0ndXCdv2M"
@@ -66,7 +66,7 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
 
             val userChatId = update.message.chatId
 
-            val sendMessage = SendMessage() // Create a SendMessage object with mandatory fields
+            val sendMessage = SendMessage()
                     .setChatId(userChatId)
 
             val nowDate = LocalDateTime.now()
@@ -201,16 +201,22 @@ class BugHuntBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPo
         return response.getValues()
     }
 
-    // TODO not sure whether to write my id
     fun sendStatistics() {
         val bugHuntSheet = getBugHuntSheet()
         logger.info("Started to send statistics")
 
+        val nowDateString = LocalDateTime.now().format(dateTimeFormatter)
+
         for (row in bugHuntSheet) {
+            // Assuming that all format in the table is the same for simplicity
             val nextTime = row.getOrNull(7)
 
-            if (nextTime == Date()) {
-                logger.info("Have a bug to notify about: $row")
+            if (nextTime == nowDateString) {
+                val sendMessage = SendMessage()
+                        .setChatId(chatIdInternal)
+                        .setText("Have a bug to check once again: $row")
+
+                execute(sendMessage)
             }
         }
 
