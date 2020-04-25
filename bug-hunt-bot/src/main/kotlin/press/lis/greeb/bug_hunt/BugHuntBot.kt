@@ -207,17 +207,16 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
 
         val nowDateString = LocalDateTime.now().format(dateTimeFormatter)
 
-        for (row in bugHuntSheet) {
-            // Assuming that all date formats in the table is the same for simplicity
-            val nextTime = row.getOrNull(7)
+        val bugsString = bugHuntSheet
+                .filter { it.getOrNull(7) == nowDateString }
+                .joinToString(separator = "\n\n") { "${it.getOrNull(1)}: ${it.getOrNull(0)}" }
 
-            if (nextTime == nowDateString) {
-                val sendMessage = SendMessage()
-                        .setChatId(chatIdInternal)
-                        .setText("Have a bug to check once again: $row")
+        if (bugsString != "") {
+            val sendMessage = SendMessage()
+                    .setChatId(chatIdInternal)
+                    .setText("Bugs that should be checked today:\n\n$bugsString")
 
-                execute(sendMessage)
-            }
+            execute(sendMessage)
         }
 
         initializeBugHuntSheets()
