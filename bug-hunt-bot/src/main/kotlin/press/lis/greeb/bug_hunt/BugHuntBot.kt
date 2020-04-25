@@ -208,7 +208,7 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
         val nowDateString = LocalDateTime.now().format(dateTimeFormatter)
 
         for (row in bugHuntSheet) {
-            // Assuming that all format in the table is the same for simplicity
+            // Assuming that all date formats in the table is the same for simplicity
             val nextTime = row.getOrNull(7)
 
             if (nextTime == nowDateString) {
