@@ -59,6 +59,5 @@ class BugHuntBotConfiguration {
 }
 
 fun main() {
-    val bot = BugHuntBotConfiguration().createBot()
-    bot.sendStatistics()
+    BugHuntBotConfiguration().createBot()
 }
