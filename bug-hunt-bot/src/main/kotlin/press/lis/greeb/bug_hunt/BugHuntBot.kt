@@ -31,13 +31,13 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
     private lateinit var header: List<Any>
     private lateinit var currentRowIndexed: IndexedValue<List<Any>>
 
-    private fun getBugHuntSheet(): List<List<Any>> {
+    private fun getBugHuntSheet(): Iterable<IndexedValue<List<Any>>> {
         val response = spreadSheetService.spreadsheets().values()
                 .get(bugHuntSheetId,
                         "A:AM")
                 .execute()
 
-        return response.getValues()
+        return response.getValues().withIndex()
     }
 
     init {
@@ -49,29 +49,32 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
 
     private fun initializeBugHuntSheetsDefault() {
         val bugHuntSheet = getBugHuntSheet()
-        header = bugHuntSheet[0]
+        header = bugHuntSheet.first().value
 
         val usedBugHuntSheet = bugHuntSheet.drop(1)
-        bugHuntIterator = usedBugHuntSheet.withIndex().iterator()
+        bugHuntIterator = usedBugHuntSheet.iterator()
     }
 
 
     private fun initializeBugHuntSheetsWithPriority() {
         val bugHuntSheet = getBugHuntSheet()
-        header = bugHuntSheet[0]
+        header = bugHuntSheet.first().value
 
         // TODO looks like strategy will be better here
         val usedBugHuntSheet =
                 bugHuntSheet
                         .drop(1)
                         .sortedWith(compareBy(
-                                { it[3].toString().toLong() < 100 },
+                                { it.value[3].toString().toLong() < 100 },
                                 // Nulls should be last in this priority
                                 // TODO desc will be better here?
-                                { LocalDate.parse(it.getOrElse(7) { "2000-01-01" }.toString(), dateTimeFormatter) }))
+                                {
+                                    LocalDate.parse(it.value.getOrElse(7) { "2000-01-01" }.toString(),
+                                            dateTimeFormatter)
+                                }))
                         .reversed()
 
-        bugHuntIterator = usedBugHuntSheet.withIndex().iterator()
+        bugHuntIterator = usedBugHuntSheet.iterator()
     }
 
 
@@ -240,8 +243,8 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
         val nowDateString = LocalDateTime.now().format(dateTimeFormatter)
 
         val bugsString = bugHuntSheet
-                .filter { it.getOrNull(7) == nowDateString }
-                .joinToString(separator = "\n\n") { "${it.getOrNull(1)}: ${it.getOrNull(0)}" }
+                .filter { it.value.getOrNull(7) == nowDateString }
+                .joinToString(separator = "\n\n") { "${it.value.getOrNull(1)}: ${it.value.getOrNull(0)}" }
 
         if (bugsString != "") {
             val sendMessage = SendMessage()
