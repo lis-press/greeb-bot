@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 import press.lis.greeb.spreadsheets.SheetsClient
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -27,17 +28,50 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
     private val dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     private lateinit var bugHuntIterator: Iterator<IndexedValue<List<Any>>>
-    private lateinit var header: IndexedValue<List<Any>>
+    private lateinit var header: List<Any>
     private lateinit var currentRowIndexed: IndexedValue<List<Any>>
 
-    private fun initializeBugHuntSheets() {
-        bugHuntIterator = getBugHuntSheet().withIndex().iterator()
-        header = bugHuntIterator.next()
-        currentRowIndexed = header
+    private fun getBugHuntSheet(): List<List<Any>> {
+        val response = spreadSheetService.spreadsheets().values()
+                .get(bugHuntSheetId,
+                        "A:AM")
+                .execute()
+
+        return response.getValues()
     }
 
     init {
-        initializeBugHuntSheets()
+        // TODO made to initialize currentRowIndexed correctly and make deployment procedure easier
+        // TODO not sure should be included in final interface
+        sendStatistics()
+    }
+
+
+    private fun initializeBugHuntSheetsDefault() {
+        val bugHuntSheet = getBugHuntSheet()
+        header = bugHuntSheet[0]
+
+        val usedBugHuntSheet = bugHuntSheet.drop(1)
+        bugHuntIterator = usedBugHuntSheet.withIndex().iterator()
+    }
+
+
+    private fun initializeBugHuntSheetsWithPriority() {
+        val bugHuntSheet = getBugHuntSheet()
+        header = bugHuntSheet[0]
+
+        // TODO looks like strategy will be better here
+        val usedBugHuntSheet =
+                bugHuntSheet
+                        .drop(1)
+                        .sortedWith(compareBy(
+                                { it[3].toString().toLong() < 100 },
+                                // Nulls should be last in this priority
+                                // TODO desc will be better here?
+                                { LocalDate.parse(it.getOrElse(7) { "2000-01-01" }.toString(), dateTimeFormatter) }))
+                        .reversed()
+
+        bugHuntIterator = usedBugHuntSheet.withIndex().iterator()
     }
 
 
@@ -94,10 +128,17 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
                 }
                 // TODO возможно, стоит вынести на клавиатуру
                 "c", "с", "clear" -> {
-                    initializeBugHuntSheets()
+                    initializeBugHuntSheetsDefault()
 
                     val message = getNextMessage()
                     sendMessage.text = "*Cleared*\n\n$message"
+                    sendMessage.enableMarkdown(true)
+                }
+                "cc", "сс", "clear with priority" -> {
+                    initializeBugHuntSheetsWithPriority()
+
+                    val message = getNextMessage()
+                    sendMessage.text = "*Cleared with priority*\n\n$message"
                     sendMessage.enableMarkdown(true)
                 }
                 "\\", "ё", "n", "/next", "Next bug" -> {
@@ -160,10 +201,10 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
     }
 
     private fun getNextMessage(): String {
-        // TODO по умолчанию пропускать те баги, которые отложены -> можно не пропускать, если сброшено специальным образом
         currentRowIndexed = bugHuntIterator.next()
         val currentRow: List<Any> = currentRowIndexed.value
 
+        // TODO use better abstraction for parsing of the string
         val bug = currentRow.getOrNull(0)
         val hardness = currentRow.getOrNull(1)
         val field = currentRow.getOrNull(4)
@@ -192,15 +233,6 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
         return message
     }
 
-    private fun getBugHuntSheet(): List<List<Any>> {
-        val response = spreadSheetService.spreadsheets().values()
-                .get(bugHuntSheetId,
-                        "A:AM")
-                .execute()
-
-        return response.getValues()
-    }
-
     fun sendStatistics() {
         val bugHuntSheet = getBugHuntSheet()
         logger.info("Started to send statistics")
@@ -219,6 +251,13 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
             execute(sendMessage)
         }
 
-        initializeBugHuntSheets()
+        initializeBugHuntSheetsWithPriority()
+
+        val message = getNextMessage()
+
+        execute(SendMessage()
+                .setChatId(chatIdInternal)
+                .setText("*First message in new priority*\n\n$message")
+                .enableMarkdown(true))
     }
 }
