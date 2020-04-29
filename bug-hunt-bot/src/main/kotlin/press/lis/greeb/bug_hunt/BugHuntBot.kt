@@ -67,7 +67,6 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
                         .sortedWith(compareBy(
                                 { it.value[3].toString().toLong() < 100 },
                                 // Nulls should be last in this priority
-                                // TODO desc will be better here?
                                 {
                                     LocalDate.parse(it.value.getOrElse(7) { "2000-01-01" }.toString(),
                                             dateTimeFormatter)
