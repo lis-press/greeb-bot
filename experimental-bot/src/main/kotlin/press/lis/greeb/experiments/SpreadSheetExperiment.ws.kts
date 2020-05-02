@@ -1,22 +1,55 @@
 package press.lis.greeb.experiments
 
-import com.beust.klaxon.JsonObject
-import com.beust.klaxon.Parser
-import com.github.kittinunf.fuel.httpGet
-import java.nio.charset.Charset
+import press.lis.greeb.spreadsheets.SheetsClient
 
-val cookie = "sessionid=p9fpe222ib1ot2wf38xen3ohzfv1dcuf"
-val r = "https://workflowy.com/get_initialization_data?client_version=21"
-        .httpGet()
-        .header("cookie", cookie)
-        .response()
+// You can try to run this in REPL mode to experiment with spreadsheets
+print("Test")
 
-val (request, response, result) = r
+val sheetService = SheetsClient.sheetService
 
-print(r.first)
-print(r.second)
-print(r.third)
+val s_id = "1q3pPL_PMhnXbaAOsQ4EU96hAn7ZJuZQJguEEyvONipY"
+val response = sheetService.spreadsheets().values()
+        .get(s_id,
+                "A:AM")
+        .execute()
 
-val parsedJson = Parser.default().parse(r.third.component1()!!.inputStream(), Charset.forName("UTF8")) as JsonObject
+//x.spreadsheets().values().update(
+//        s_id,
+//        "AJ9",
+//        ValueRange().setValues(listOf(listOf(true)))
+//).execute()
 
-parsedJson.obj("user")
+val values = response.getValues()
+
+values[0]
+
+fun columnNumberToA1(columnNumber: Int): String {
+    var columnNumberInternal: Int = columnNumber
+    val sb = StringBuilder()
+    val numberOfLetters = 26
+
+    while (true) {
+        sb.append('A' + columnNumberInternal % numberOfLetters)
+
+        if (columnNumberInternal < numberOfLetters) {
+            break
+        }
+
+        columnNumberInternal /= numberOfLetters
+        columnNumberInternal--
+    }
+
+    return sb.reverse().toString()
+}
+
+columnNumberToA1(1)
+columnNumberToA1(28)
+columnNumberToA1(26)
+columnNumberToA1(27)
+columnNumberToA1(270)
+columnNumberToA1(676)
+columnNumberToA1(702)
+columnNumberToA1(702)
+columnNumberToA1(701)
+columnNumberToA1(25)
+columnNumberToA1(701)
