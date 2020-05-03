@@ -10,7 +10,7 @@ import java.nio.charset.Charset
  */
 fun main(args: Array<String>) {
     val cookie = args[0]
-    val (request, response, result) = "https://workflowy.com/get_initialization_data?client_version=21"
+    val (_, _, result) = "https://workflowy.com/get_initialization_data?client_version=21"
             .httpGet()
             .header("cookie", cookie)
             .response()
@@ -24,9 +24,6 @@ fun main(args: Array<String>) {
             ?.obj("mainProjectTreeInfo")
             ?.array<JsonObject>("rootProjectChildren")
 
-    print(1)
-
-    print(1.1)
 
     val weeklyPlanning = rootProjectArray
             ?.filter { it.string("nm") == "Work" }
@@ -34,8 +31,6 @@ fun main(args: Array<String>) {
                 it.array<JsonObject>("ch")
                         ?.filter { x -> x.string("nm") == "Недельное планирование" }
             }
-
-    print(2)
 
     val currentWeek = weeklyPlanning
             ?.get(0)
@@ -45,6 +40,31 @@ fun main(args: Array<String>) {
 
     val currentWeekDays = currentWeek
             ?.array<JsonObject>("ch")
+
+    val tagsPerDay = currentWeekDays?.map {
+        Pair(it.string("nm"),
+                it.array<JsonObject>("ch")?.flatMap { sub ->
+                    "#[a-zA-Z0-9]+".toRegex().findAll(sub.string("nm").toString())
+                            .toList().flatMap { r -> r.groupValues }
+                }?.groupBy
+                { pair ->
+                    pair
+                }?.mapValues { v ->
+                    v.value.size
+                })
+    }
+
+    tagsPerDay?.forEach { (day, tags) ->
+        if (day != null && tags != null) {
+            println("$day:")
+
+            tags.forEach { (tag, number) ->
+                println("$tag: $number")
+            }
+
+            println("\n\n")
+        }
+    }
 
     print(3)
 
