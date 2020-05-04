@@ -40,12 +40,6 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
         return response.getValues().withIndex()
     }
 
-    init {
-        // TODO made to initialize currentRowIndexed correctly and make deployment procedure easier
-        // TODO not sure should be included in final interface
-        sendStatistics()
-    }
-
 
     private fun initializeBugHuntSheetsDefault() {
         val bugHuntSheet = getBugHuntSheet()
@@ -260,6 +254,13 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
         execute(SendMessage()
                 .setChatId(chatIdInternal)
                 .setText("*First message in new priority*\n\n$message")
+                .enableMarkdown(true))
+    }
+
+    fun sendCustomMessage(message: String) {
+        execute(SendMessage()
+                .setChatId(chatIdInternal)
+                .setText(message)
                 .enableMarkdown(true))
     }
 }

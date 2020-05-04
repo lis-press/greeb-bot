@@ -16,4 +16,5 @@ ADD ${JAR_LIB_FILE} lib/
 # java -jar /usr/local/runme/app.jar
 ENTRYPOINT java -Dbot.token=${BOT_TOKEN} \
   -Dbot.chatId=${BOT_CHAT_ID} \
+  -Dworkflowy.cookie=${WORKFLOWY_COOKIE} \
   -Dbot.no_proxy=true -jar app.jar
