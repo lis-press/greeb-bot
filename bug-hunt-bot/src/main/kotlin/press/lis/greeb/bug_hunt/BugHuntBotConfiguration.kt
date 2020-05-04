@@ -21,10 +21,10 @@ class BugHuntBotConfiguration {
 
     private val proxyHost = "localhost"
     private val proxyPort = 1337
+    private val configFactory = ConfigFactory.load()
 
     @Bean
     fun createBot(): BugHuntBot {
-        val configFactory = ConfigFactory.load()
         val botToken = configFactory.getString("bot.token")
         val chatId = configFactory.getLong("bot.chatId")
 
@@ -56,8 +56,17 @@ class BugHuntBotConfiguration {
         return bot
     }
 
+    @Bean
+    fun createProductivityStatisticsCollector(): ProductivityStatisticsCollector {
+        val cookie = configFactory.getString("workflowy.cookie")
+
+        return ProductivityStatisticsCollector(cookie)
+    }
+
 }
 
 fun main() {
-    BugHuntBotConfiguration().createBot()
+    val bugHuntBotConfiguration = BugHuntBotConfiguration()
+    bugHuntBotConfiguration.createProductivityStatisticsCollector()
+    bugHuntBotConfiguration.createBot()
 }
