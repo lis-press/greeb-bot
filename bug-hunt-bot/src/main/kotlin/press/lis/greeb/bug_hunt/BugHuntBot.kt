@@ -40,7 +40,6 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
         return response.getValues().withIndex()
     }
 
-
     private fun initializeBugHuntSheetsDefault() {
         val bugHuntSheet = getBugHuntSheet()
         header = bugHuntSheet.first().value
