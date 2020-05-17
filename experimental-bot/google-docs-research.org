@@ -1,0 +1,42 @@
+* Making first Google Add-on
+** I would like to to find out the way to solve the problem of backward references (making graph-like document in Google Docs).
+** First i've started to researce Google Add-on market and google search didn't find anything that could suit my need, so I've started to estimate how difficult it will be to make it myself.
+** I've started with finding the [[https://developers.google.com/gsuite/add-ons/editors/docs/quickstart/translate][Quick Start for Google Docs]]
+*** Before I begin I went through the [[https://developers.google.com/gsuite/add-ons/editors/docs][Possibilities of Google Docs Add-Ons]] to ensure I can implement my feature somehow. First time look said that I can.
+** I've made the QuickStart, skimmed through it and go to the exploration of [[https://developers.google.com/apps-script/reference/document][Ducument Structure]] to find out the way to collect links and extend the document
+*** I'm trying to understand the structure of Document
+I understand that link, identifier of internal links and headers should be ingrained somehow in the structure of document and I would like to find out how.
+*** First time look says that there links are not first-class citizens and they should be considered only as children of some other elements
+*** So i've started to experiment, it took the most time on realising [[*Setting up development project][Setting up the development process]] in Google Docs
+*** Through tens of iteration I've found out that I need the lowest level of abstraction of [[https://developers.google.com/apps-script/reference/document/text][Text]] and [[https://developers.google.com/apps-script/reference/document/text#getTextAttributeIndices()][unique formatting]], see code below
+#+BEGIN_SRC js
+function getSelectedText() {
+  var body = DocumentApp.getActiveDocument().getBody();
+  var n1 = body.getParagraphs();
+  for (var i = 0; i < n1.length; ++i) {
+    var n2 = n1[i].getText();
+    var n3 = n1[i].getChild(0);
+    var n7 = n3.getTextAttributeIndices();
+    for (var j = 0; j < n7.length; j++) {
+      if (n3.getLinkUrl(n7[j])) {
+        var n3 = n3.getLinkUrl(n7[j]);
+        var n9 = 0;
+      } 
+    }
+    var n4 = 0;
+  }
+  var n5 = 0
+}
+#+END_SRC
+** Setting up the development process
+*** I've decided to use the google IDE directly on script.google.com (the way described in tutorial).
+*** My goal was to find out how to implement fast enough feedback loop to still enjoy development :).
+*** I've decided to use debug mode (like in IDE). Debug mode is connected directly with the document you've opened your document in, so it's quite easy to start experiments.
+It looks like this: I'm changing structure -> I'm adding breakpoint after change -> I'm checking the states of the variables in debug window.
+** Further steps on the current level of understanding
+*** Mark up all nodes with blue if they have any incoming links.
+**** May be problems if have links
+*** On click to the marked up node add list all links to the sidebar.
+*** Make a possibility to turn off the formating.
+*** Make links creation to the text easier.
+
