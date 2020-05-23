@@ -34,9 +34,18 @@ function getSelectedText() {
 *** I've decided to use debug mode (like in IDE). Debug mode is connected directly with the document you've opened your document in, so it's quite easy to start experiments.
 It looks like this: I'm changing structure -> I'm adding breakpoint after change -> I'm checking the states of the variables in debug window.
 ** Further steps on the current level of understanding
+*** So, what can I do? I should find out how can I manipulate with linked word, I've found out how to process links and now it could be easier
+**** But it's hard for me to find out the model, how it could be easy enough to use
+I've tried to find out, how I can make links to the material.
+There are two approaches worth mentioning and considering: links to heading (that are generating by default) and bookmarks.
+Can't find the easy way to get links to these heading (maybe it worth researching more) but not that easy as I would like.
+Bookmarks are not available by a shortcut (I believe that I can integrate it in my extension).
+Bookmarks are also can overlap with heading and not very easy to link at (they are very mouse-oriented).
+As for now, it looks not very comfortable to integrate all these things.
+**** Another approach I may use 
 *** Mark up all nodes with blue if they have any incoming links.
 **** May be problems if have links
 *** On click to the marked up node add list all links to the sidebar.
 *** Make a possibility to turn off the formating.
 *** Make links creation to the text easier.
-
+*** Link to the document: https://docs.google.com/document/d/1S--RcdO2mNJTlqfTh5uHgNVBbmOuX0hmwFsl5rS_8jU/edit
