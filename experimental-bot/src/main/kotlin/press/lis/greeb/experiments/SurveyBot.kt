@@ -4,9 +4,7 @@ import com.typesafe.config.ConfigFactory
 import mu.KotlinLogging
 import org.apache.commons.codec.binary.Base64
 import org.telegram.telegrambots.ApiContextInitializer
-import org.telegram.telegrambots.bots.DefaultBotOptions
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
-import org.telegram.telegrambots.meta.ApiContext
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.meta.api.methods.AnswerInlineQuery
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -24,8 +22,10 @@ import java.util.*
 
 /**
  * @author Aleksandr Eliseev
+ *
  */
-class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : TelegramLongPollingBot(options) {
+class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
+    // TODO Восстановить бы контекст, чего мне сейчас
     private val botTokenInternal: String = botToken
     private val logger = KotlinLogging.logger {}
 
@@ -104,18 +104,20 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
             }
             update.hasInlineQuery() -> {
 
-
+                // TODO seems like case without message is not processed correctly
+                // TODO move to the method
                 val messageAndChatByteArray = Base64.decodeBase64(update.inlineQuery.query)
                 val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
 
                 val messageId = messageAndChatByteBuffer.getInt(0)
                 val chatId = messageAndChatByteBuffer.getLong(Int.SIZE_BYTES)
 
-                // TODO duplication -> кажется, что здесь нельзя поменять опрос на тот же или всё-таки можно, я так и не понял
                 val inlineKeyboardMarkup = InlineKeyboardMarkup(
                         listOf(
                                 listOf(
-                                        InlineKeyboardButton("First").setCallbackData("FF")
+                                        InlineKeyboardButton("First").setCallbackData(
+                                                // Need to be unique for edit to work
+                                                System.currentTimeMillis().toString())
                                 ),
                                 listOf(
                                         InlineKeyboardButton("Third").setSwitchInlineQuery(
@@ -129,16 +131,29 @@ class HammerTimeMarathonBot(botToken: String, options: DefaultBotOptions?) : Tel
                         .setReplyMarkup(inlineKeyboardMarkup))
 
                 val results: List<InlineQueryResultArticle> = if (messageProcessed is Message) {
-                    val messageProcessedInternal = messageProcessed as Message
-                    listOf(InlineQueryResultArticle()
+                    val messageProcessedCasted = messageProcessed as Message
+
+                    val notAnswer = InlineQueryResultArticle()
                             .setId(UUID.randomUUID().toString())
                             .setHideUrl(true)
                             .setTitle("Title test")
                             .setDescription("Description test")
                             .setInputMessageContent(InputTextMessageContent()
-                                    .setMessageText(messageProcessedInternal.text)
+                                    .setMessageText(messageProcessedCasted.text)
                                     .setDisableWebPagePreview(true))
-                            .setUrl("http://nfclub.tilda.ws/"))
+                            .setUrl("http://nfclub.tilda.ws/")
+
+                    if (messageProcessedCasted.text.contains("-->")) {
+                        val generatedButtons = "--> (.+)".toRegex()
+                                .findAll(messageProcessedCasted.text)
+                                .mapIndexed { id, optionText ->
+                                    listOf(InlineKeyboardButton(optionText.groups[1]!!.value).setCallbackData(id.toString()))
+                                }.toList()
+
+                        notAnswer.replyMarkup = InlineKeyboardMarkup(generatedButtons)
+                    }
+
+                    listOf(notAnswer)
                 } else {
                     listOf()
                 }
@@ -166,13 +181,7 @@ fun main() {
 
     val botsApi = TelegramBotsApi()
 
-    val botOptions = ApiContext.getInstance(DefaultBotOptions::class.java)
-
-    botOptions.proxyHost = "localhost"
-    botOptions.proxyPort = 1337
-    botOptions.proxyType = DefaultBotOptions.ProxyType.SOCKS5
-
-    val hammerTimeBot = HammerTimeMarathonBot(botToken, botOptions)
+    val hammerTimeBot = HammerTimeMarathonBot(botToken)
 
     botsApi.registerBot(hammerTimeBot)
 }
