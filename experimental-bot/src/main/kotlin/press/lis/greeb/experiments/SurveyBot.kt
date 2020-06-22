@@ -37,6 +37,72 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
         return botTokenInternal
     }
 
+    private fun getInlineKeyboard(switchInlineQuery: String): InlineKeyboardMarkup {
+        return InlineKeyboardMarkup(
+                listOf(
+                        listOf(
+                                InlineKeyboardButton("First").setCallbackData(System.currentTimeMillis().toString())
+                        ),
+                        listOf(
+                                InlineKeyboardButton("Third").setSwitchInlineQuery(switchInlineQuery)
+                        )
+                ))
+    }
+
+    // TODO better to make converter to the separate type
+    private fun toBase64String(int1: Int, long1: Long): String {
+        val byteArray = ByteBuffer.allocate(Int.SIZE_BYTES + Long.SIZE_BYTES)
+                .putInt(int1)
+                .putLong(long1)
+                .array()
+
+        return Base64.encodeBase64(byteArray).toString(Charset.forName("UTF8"))
+    }
+
+    private fun toBase64String(int1: Int, long1: Long, int2: Int): String {
+        val byteArray = ByteBuffer.allocate(Int.SIZE_BYTES + Long.SIZE_BYTES + Int.SIZE_BYTES)
+                .putInt(int1)
+                .putLong(long1)
+                .putInt(int2)
+                .array()
+
+        return Base64.encodeBase64(byteArray).toString(Charset.forName("UTF8"))
+    }
+
+    private fun base64toIntLong(base64: String): Pair<Int, Long> {
+        val messageAndChatByteArray = Base64.decodeBase64(base64)
+        val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
+
+        val int1 = messageAndChatByteBuffer.getInt(0)
+        val long1 = messageAndChatByteBuffer.getLong(Int.SIZE_BYTES)
+
+        return Pair(int1, long1)
+    }
+
+    private fun base64toIntLongInt(base64: String): Triple<Int, Long, Int> {
+        val messageAndChatByteArray = Base64.decodeBase64(base64)
+        val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
+
+        val int1 = messageAndChatByteBuffer.getInt(0)
+        val long1 = messageAndChatByteBuffer.getLong(Int.SIZE_BYTES)
+        val int2 = messageAndChatByteBuffer.getInt(Int.SIZE_BYTES + Long.SIZE_BYTES)
+
+        return Triple(int1, long1, int2)
+    }
+
+    private fun getMessage(messageId: Int, chatId: Long, switchInlineQuery: String): Message {
+        val inlineKeyboardMarkup = getInlineKeyboard(
+                switchInlineQuery = switchInlineQuery)
+
+        val messageProcessed = execute(EditMessageReplyMarkup()
+                .setChatId(chatId)
+                .setMessageId(messageId)
+                .setReplyMarkup(inlineKeyboardMarkup))
+
+        // TODO I strongly believe that there should be a Message
+        return messageProcessed as Message
+    }
+
     override fun onUpdateReceived(update: Update?) {
         logger.info { "Got Update $update" }
 
@@ -48,90 +114,62 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
             update.message?.text != null -> {
                 val chatId = update.message.chatId
 
-                // TODO Так, свитч инлайн я смог настроить здесь, пока не понимаю, как это всё
-
                 val result = execute(SendMessage()
                         .setChatId(chatId)
-//                        .setReplyMarkup(inlineKeyboardMarkup)
                         .setText(update.message?.text))
 
+                val inlineKeyboardMarkup = getInlineKeyboard(
+                        switchInlineQuery = toBase64String(result.messageId, result.chatId))
 
-                val test = ByteBuffer.allocate(Int.SIZE_BYTES + Long.SIZE_BYTES)
-                        .putInt(result.messageId)
-                        .putLong(result.chatId)
-                        .array()
-
-                val inlineKeyboardMarkup = InlineKeyboardMarkup(
-                        listOf(
-                                listOf(
-                                        InlineKeyboardButton("First").setCallbackData("F")
-                                ),
-                                listOf(
-                                        InlineKeyboardButton("Third").setSwitchInlineQuery(
-                                                Base64.encodeBase64(test)
-                                                        .toString(Charset.forName("UTF8")))
-                                )
-                        ))
-
-                // Don't need it actually
+                // Need to reference the current message in reply markup
                 execute(EditMessageReplyMarkup()
                         .setChatId(result.chatId)
                         .setMessageId(result.messageId)
                         .setReplyMarkup(inlineKeyboardMarkup))
-
-                // TODO я могу попытаться здесь сразу отредактировать это сообщение...
-                // TODO не уверен, есть ли здесь какие-то ещё интересные варианты
             }
             update.hasCallbackQuery() -> {
 
                 val callbackQuery = update.callbackQuery
 
-                // TODO с чего начнём? Попробуем опубликовать новый опрос в других чатах? Звучит достаточно интересно
+                if (callbackQuery.message != null) {
+                    // It means, it's callback from the chat with bot
+                    execute(EditMessageText()
+                            .setChatId(callbackQuery.message.chatId)
+                            .setMessageId(callbackQuery.message.messageId)
+                            .setReplyMarkup(callbackQuery.message.replyMarkup)
+                            .setText(callbackQuery.message.text + "\nCallback ${callbackQuery.data} получен"))
+                } else {
+                    // It means, it's callback from other chat...
+                    val (messageId, chatId, optionId) = base64toIntLongInt(callbackQuery.data)
 
-                // I can edit the message in one or other chats, but I can't repost inline messages
-                // Unless I'll do it via the bot -> I can do the bot with cross chat surveys in order to do that,
-                // Looks like a quick win.
+                    val messageProcessed = getMessage(messageId = messageId,
+                            chatId = chatId,
+                            switchInlineQuery = update.callbackQuery.data)
 
-                // Another thing I would like to think about is how to send store data:
-                // Easiest way is to manage the list in one centered platform + all other message list too.
-                // Use one edit message as the database -> deleting all the sources after the survey finished.
-                // Okay, 64 bytes for callback id makes it a bit harder
-                execute(EditMessageText()
-                        .setChatId(callbackQuery.message.chatId)
-                        .setMessageId(callbackQuery.message.messageId)
-                        .setReplyMarkup(callbackQuery.message.replyMarkup)
-                        .setText(callbackQuery.message.text + "\nCallback ${callbackQuery.data} получен"))
+                    execute(EditMessageText()
+                            .setChatId(messageProcessed.chatId)
+                            .setMessageId(messageProcessed.messageId)
+                            .setReplyMarkup(messageProcessed.replyMarkup)
+                            .setText(messageProcessed.text + "\nПроголосовано: $optionId, " +
+                                    "проголосвал: ${callbackQuery.from.userName}"))
+
+                    // TODO Learn to preprocess messages in order to provide the correct markup and broadcast
+                    execute(EditMessageText()
+                            .setInlineMessageId(callbackQuery.inlineMessageId)
+                            .setText("Wow, lel"))
+                }
             }
             update.hasInlineQuery() -> {
 
                 // TODO seems like case without message is not processed correctly
-                // TODO move to the method
-                val messageAndChatByteArray = Base64.decodeBase64(update.inlineQuery.query)
-                val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
+                var results: List<InlineQueryResultArticle>
 
-                val messageId = messageAndChatByteBuffer.getInt(0)
-                val chatId = messageAndChatByteBuffer.getLong(Int.SIZE_BYTES)
+                try {
+                    val (messageId, chatId) = base64toIntLong(update.inlineQuery.query)
 
-                val inlineKeyboardMarkup = InlineKeyboardMarkup(
-                        listOf(
-                                listOf(
-                                        InlineKeyboardButton("First").setCallbackData(
-                                                // Need to be unique for edit to work
-                                                System.currentTimeMillis().toString())
-                                ),
-                                listOf(
-                                        InlineKeyboardButton("Third").setSwitchInlineQuery(
-                                                update.inlineQuery.query)
-                                )
-                        ))
-
-                val messageProcessed = execute(EditMessageReplyMarkup()
-                        .setChatId(chatId)
-                        .setMessageId(messageId)
-                        .setReplyMarkup(inlineKeyboardMarkup))
-
-                val results: List<InlineQueryResultArticle> = if (messageProcessed is Message) {
-                    val messageProcessedCasted = messageProcessed as Message
+                    val messageProcessed = getMessage(messageId = messageId,
+                            chatId = chatId,
+                            switchInlineQuery = update.inlineQuery.query)
 
                     val notAnswer = InlineQueryResultArticle()
                             .setId(UUID.randomUUID().toString())
@@ -139,32 +177,50 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
                             .setTitle("Title test")
                             .setDescription("Description test")
                             .setInputMessageContent(InputTextMessageContent()
-                                    .setMessageText(messageProcessedCasted.text)
+                                    .setMessageText(messageProcessed.text)
                                     .setDisableWebPagePreview(true))
                             .setUrl("http://nfclub.tilda.ws/")
 
-                    if (messageProcessedCasted.text.contains("-->")) {
+                    if (messageProcessed.text.contains("-->")) {
                         val generatedButtons = "--> (.+)".toRegex()
-                                .findAll(messageProcessedCasted.text)
+                                .findAll(messageProcessed.text)
                                 .mapIndexed { id, optionText ->
-                                    listOf(InlineKeyboardButton(optionText.groups[1]!!.value).setCallbackData(id.toString()))
+                                    val returnData = toBase64String(messageId, chatId, id)
+
+                                    listOf(InlineKeyboardButton(optionText.groups[1]!!.value)
+                                            .setCallbackData(returnData))
                                 }.toList()
 
                         notAnswer.replyMarkup = InlineKeyboardMarkup(generatedButtons)
                     }
 
-                    listOf(notAnswer)
-                } else {
-                    listOf()
+                    results = listOf(notAnswer)
+                } catch (e: Exception) {
+                    // TODO not sure it's best to process it via Exception
+                    logger.warn("Not a valid callback id", e)
+                    results = listOf()
                 }
 
                 execute(AnswerInlineQuery()
                         .setInlineQueryId(update.inlineQuery.id)
                         .setSwitchPmText("Тоже хочу завести подобный опрос")
                         .setSwitchPmParameter("Test")
-//                    .setResults(listOf())
                         .setResults(results)
                 )
+            }
+            update.hasChosenInlineQuery() -> {
+                val inlineMessageId = update.chosenInlineQuery.inlineMessageId
+                val (messageId, chatId) = base64toIntLong(update.chosenInlineQuery.query)
+
+                val message = getMessage(messageId = messageId,
+                        chatId = chatId,
+                        switchInlineQuery = update.chosenInlineQuery.query)
+
+                execute(EditMessageText()
+                        .setChatId(message.chatId)
+                        .setMessageId(message.messageId)
+                        .setReplyMarkup(message.replyMarkup)
+                        .setText(message.text + "\nInline Message Id: $inlineMessageId"))
             }
             else -> {
                 print(1)
