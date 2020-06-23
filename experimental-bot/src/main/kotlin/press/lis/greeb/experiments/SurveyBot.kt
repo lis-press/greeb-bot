@@ -146,17 +146,79 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
                             chatId = chatId,
                             switchInlineQuery = update.callbackQuery.data)
 
+                    // TODO --> (.+)( --> .*)? найти, проверить, есть ли в последнем списке
+
+                    val lineToEdit =
+                            messageProcessed.text.lines().filter { it.startsWith("-->") }[optionId]
+                    val splitMessage = lineToEdit.split(" #> ")
+                    val splitNames =
+                            splitMessage
+                                    .elementAtOrNull(1)?.split(" ")?.toSet() ?: emptySet()
+
+                    val finalSet = if (splitNames.contains(callbackQuery.from.userName)) {
+                        splitNames.minus(callbackQuery.from.userName)
+                    } else {
+                        splitNames.plus(callbackQuery.from.userName)
+                    }
+
+                    val newMessage =
+                            messageProcessed.text.replace(lineToEdit,
+                                    "${splitMessage[0]} #> ${finalSet.joinToString(separator = " ")}")
+
                     execute(EditMessageText()
                             .setChatId(messageProcessed.chatId)
                             .setMessageId(messageProcessed.messageId)
                             .setReplyMarkup(messageProcessed.replyMarkup)
-                            .setText(messageProcessed.text + "\nПроголосовано: $optionId, " +
-                                    "проголосвал: ${callbackQuery.from.userName}"))
+                            .setText(newMessage))
 
-                    // TODO Learn to preprocess messages in order to provide the correct markup and broadcast
-                    execute(EditMessageText()
-                            .setInlineMessageId(callbackQuery.inlineMessageId)
-                            .setText("Wow, lel"))
+                    val message = newMessage
+
+                    val mainText = message
+                            .lines()
+                            .filterNot { it.startsWith("--") }
+                            .joinToString("\n")
+
+                    var options = emptyList<Pair<String, Int>>()
+                    var inlineIds = emptyList<String>()
+
+                    message
+                            .lines()
+                            .filter { it.startsWith("--") }
+                            .forEach {
+                                when {
+                                    it[2] == '>' -> {
+                                        val split = it.substring(4).split(" #> ")
+                                        options = options.plus(Pair(split[0],
+                                                split.getOrNull(1)?.split(" ")
+                                                        ?.filter { inner -> inner.isNotBlank() }?.size ?: 0))
+                                    }
+                                    it[2] == '#' -> {
+                                        inlineIds = inlineIds.plus(it.substring(4))
+                                    }
+                                }
+                            }
+                    val optionsString = options.joinToString("\n") { "`${it.first}` (${it.second})" }
+                    val resultingMessage = "$mainText\n\n$optionsString"
+
+                    val generatedButtons = options
+                            .map { it.first }
+                            .mapIndexed { id, optionText ->
+                                val returnData = toBase64String(messageId, chatId, id)
+
+                                listOf(InlineKeyboardButton(optionText)
+                                        .setCallbackData(returnData))
+                            }.toList()
+
+                    val replyMarkup = InlineKeyboardMarkup(generatedButtons)
+
+//                    // TODO Learn to preprocess messages in order to provide the correct markup and broadcast
+                    inlineIds.forEach {
+                        execute(EditMessageText()
+                                .setInlineMessageId(it)
+                                .setText(resultingMessage)
+                                .setReplyMarkup(replyMarkup)
+                                .enableMarkdown(true))
+                    }
                 }
             }
             update.hasInlineQuery() -> {
@@ -176,23 +238,54 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
                             .setHideUrl(true)
                             .setTitle("Title test")
                             .setDescription("Description test")
-                            .setInputMessageContent(InputTextMessageContent()
-                                    .setMessageText(messageProcessed.text)
-                                    .setDisableWebPagePreview(true))
                             .setUrl("http://nfclub.tilda.ws/")
 
-                    if (messageProcessed.text.contains("-->")) {
-                        val generatedButtons = "--> (.+)".toRegex()
-                                .findAll(messageProcessed.text)
+                    val message = messageProcessed.text
+
+                    val mainText = message
+                            .lines()
+                            .filterNot { it.startsWith("--") }
+                            .joinToString("\n")
+
+                    var options = emptyList<Pair<String, Int>>()
+                    val inlineIds = emptyList<String>()
+
+                    message
+                            .lines()
+                            .filter { it.startsWith("--") }
+                            .forEach {
+                                when {
+                                    it[2] == '>' -> {
+                                        val split = it.substring(4).split(" #> ")
+                                        options = options.plus(Pair(split[0],
+                                                split.getOrNull(1)?.split(" ")
+                                                        ?.filter { inner -> inner.isNotBlank() }?.size ?: 0))
+                                    }
+                                    it[2] == '#' -> {
+                                        inlineIds.plus(it.substring(4))
+                                    }
+                                }
+                            }
+                    val optionsString = options.joinToString("\n") { "`${it.first}` (${it.second})" }
+                    val resultingMessage = "$mainText\n\n$optionsString"
+
+                    if (options.isNotEmpty()) {
+                        val generatedButtons = options
+                                .map { it.first }
                                 .mapIndexed { id, optionText ->
                                     val returnData = toBase64String(messageId, chatId, id)
 
-                                    listOf(InlineKeyboardButton(optionText.groups[1]!!.value)
+                                    listOf(InlineKeyboardButton(optionText)
                                             .setCallbackData(returnData))
                                 }.toList()
 
                         notAnswer.replyMarkup = InlineKeyboardMarkup(generatedButtons)
                     }
+
+                    notAnswer.inputMessageContent = InputTextMessageContent()
+                            .setMessageText(resultingMessage)
+                            .enableMarkdown(true)
+                            .setDisableWebPagePreview(true)
 
                     results = listOf(notAnswer)
                 } catch (e: Exception) {
@@ -220,7 +313,7 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
                         .setChatId(message.chatId)
                         .setMessageId(message.messageId)
                         .setReplyMarkup(message.replyMarkup)
-                        .setText(message.text + "\nInline Message Id: $inlineMessageId"))
+                        .setText(message.text + "\n--# $inlineMessageId"))
             }
             else -> {
                 print(1)
