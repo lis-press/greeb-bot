@@ -111,6 +111,13 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
         }
 
         when {
+            update.message?.text?.startsWith("/start") ?: false -> {
+                val chatId = update.message.chatId
+
+                execute(SendMessage()
+                        .setChatId(chatId)
+                        .setText("Пс, не хочешь немного поонбордиться? Подробнее на сайте: http://nfclub.tilda.ws/"))
+            }
             update.message?.text != null -> {
                 val chatId = update.message.chatId
 
