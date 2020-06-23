@@ -103,6 +103,49 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
         return messageProcessed as Message
     }
 
+    private fun formatMessage(message: String, messageId: Int, chatId: Long):
+            Triple<String, InlineKeyboardMarkup, List<String>> {
+        val mainText = message
+                .lines()
+                .filterNot { it.startsWith("--") }
+                .joinToString("\n")
+
+        var options = emptyList<Pair<String, Int>>()
+        var inlineIds = emptyList<String>()
+
+        message
+                .lines()
+                .filter { it.startsWith("--") }
+                .forEach {
+                    when {
+                        it[2] == '>' -> {
+                            val split = it.substring(4).split(" #> ")
+                            options = options.plus(Pair(split[0],
+                                    split.getOrNull(1)?.split(" ")
+                                            ?.filter { inner -> inner.isNotBlank() }?.size ?: 0))
+                        }
+                        it[2] == '#' -> {
+                            inlineIds = inlineIds.plus(it.substring(4))
+                        }
+                    }
+                }
+        val optionsString = options.joinToString("\n") { "`${it.first}` (${it.second})" }
+        val resultingMessage = "$mainText\n\n$optionsString"
+
+        val generatedButtons = options
+                .map { it.first }
+                .mapIndexed { id, optionText ->
+                    val returnData = toBase64String(messageId, chatId, id)
+
+                    listOf(InlineKeyboardButton(optionText)
+                            .setCallbackData(returnData))
+                }.toList()
+
+        val replyMarkup = InlineKeyboardMarkup(generatedButtons)
+
+        return Triple(resultingMessage, replyMarkup, inlineIds)
+    }
+
     override fun onUpdateReceived(update: Update?) {
         logger.info { "Got Update $update" }
 
@@ -178,47 +221,9 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
                             .setReplyMarkup(messageProcessed.replyMarkup)
                             .setText(newMessage))
 
-                    val message = newMessage
+                    val (resultingMessage, replyMarkup, inlineIds)
+                            = formatMessage(newMessage, messageId, chatId)
 
-                    val mainText = message
-                            .lines()
-                            .filterNot { it.startsWith("--") }
-                            .joinToString("\n")
-
-                    var options = emptyList<Pair<String, Int>>()
-                    var inlineIds = emptyList<String>()
-
-                    message
-                            .lines()
-                            .filter { it.startsWith("--") }
-                            .forEach {
-                                when {
-                                    it[2] == '>' -> {
-                                        val split = it.substring(4).split(" #> ")
-                                        options = options.plus(Pair(split[0],
-                                                split.getOrNull(1)?.split(" ")
-                                                        ?.filter { inner -> inner.isNotBlank() }?.size ?: 0))
-                                    }
-                                    it[2] == '#' -> {
-                                        inlineIds = inlineIds.plus(it.substring(4))
-                                    }
-                                }
-                            }
-                    val optionsString = options.joinToString("\n") { "`${it.first}` (${it.second})" }
-                    val resultingMessage = "$mainText\n\n$optionsString"
-
-                    val generatedButtons = options
-                            .map { it.first }
-                            .mapIndexed { id, optionText ->
-                                val returnData = toBase64String(messageId, chatId, id)
-
-                                listOf(InlineKeyboardButton(optionText)
-                                        .setCallbackData(returnData))
-                            }.toList()
-
-                    val replyMarkup = InlineKeyboardMarkup(generatedButtons)
-
-//                    // TODO Learn to preprocess messages in order to provide the correct markup and broadcast
                     inlineIds.forEach {
                         execute(EditMessageText()
                                 .setInlineMessageId(it)
@@ -247,52 +252,14 @@ class HammerTimeMarathonBot(botToken: String) : TelegramLongPollingBot() {
                             .setDescription("Description test")
                             .setUrl("http://nfclub.tilda.ws/")
 
-                    val message = messageProcessed.text
-
-                    val mainText = message
-                            .lines()
-                            .filterNot { it.startsWith("--") }
-                            .joinToString("\n")
-
-                    var options = emptyList<Pair<String, Int>>()
-                    val inlineIds = emptyList<String>()
-
-                    message
-                            .lines()
-                            .filter { it.startsWith("--") }
-                            .forEach {
-                                when {
-                                    it[2] == '>' -> {
-                                        val split = it.substring(4).split(" #> ")
-                                        options = options.plus(Pair(split[0],
-                                                split.getOrNull(1)?.split(" ")
-                                                        ?.filter { inner -> inner.isNotBlank() }?.size ?: 0))
-                                    }
-                                    it[2] == '#' -> {
-                                        inlineIds.plus(it.substring(4))
-                                    }
-                                }
-                            }
-                    val optionsString = options.joinToString("\n") { "`${it.first}` (${it.second})" }
-                    val resultingMessage = "$mainText\n\n$optionsString"
-
-                    if (options.isNotEmpty()) {
-                        val generatedButtons = options
-                                .map { it.first }
-                                .mapIndexed { id, optionText ->
-                                    val returnData = toBase64String(messageId, chatId, id)
-
-                                    listOf(InlineKeyboardButton(optionText)
-                                            .setCallbackData(returnData))
-                                }.toList()
-
-                        notAnswer.replyMarkup = InlineKeyboardMarkup(generatedButtons)
-                    }
+                    val (resultingMessage, replyMarkup, _)
+                            = formatMessage(messageProcessed.text, messageId, chatId)
 
                     notAnswer.inputMessageContent = InputTextMessageContent()
                             .setMessageText(resultingMessage)
                             .enableMarkdown(true)
                             .setDisableWebPagePreview(true)
+                    notAnswer.replyMarkup = replyMarkup
 
                     results = listOf(notAnswer)
                 } catch (e: Exception) {
