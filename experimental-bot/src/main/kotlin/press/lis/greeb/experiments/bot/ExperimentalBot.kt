@@ -5,6 +5,7 @@ import org.apache.commons.codec.binary.Base64
 import org.telegram.telegrambots.bots.DefaultBotOptions
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto
 import org.telegram.telegrambots.meta.api.objects.Update
 import press.lis.greeb.spreadsheets.SheetsClient
 import java.nio.ByteBuffer
@@ -21,6 +22,7 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
 
     private lateinit var header: List<Any>
     private lateinit var chats: List<Any>
+    private lateinit var rest: List<IndexedValue<List<Any>>>
 
     private fun getBugHuntSheet(): Iterable<IndexedValue<List<Any>>> {
         val response = spreadSheetService.spreadsheets().values()
@@ -37,6 +39,7 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
         val iterator = bugHuntSheet.iterator()
         header = iterator.next().value
         chats = iterator.next().value
+        rest = iterator.asSequence().toList()
     }
 
 
@@ -49,36 +52,83 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
     }
 
     // TODO Bot needs to be Admin in any chat ->
+    // TODO
     override fun onUpdateReceived(update: Update?) {
         logger.info { "Got Update $update" }
 
         // Used only for me, ignore anyone else, to ensure nothing wrong happening
         if (update?.message?.text != null && update.message.from.userName == "eliseealex") {
 
-            if (update.message.text.length != 1) {
-                val sendMessage = SendMessage()
-                        .setChatId(update.message.chatId)
-                        .setText("No way!")
+            val columnPattern = "[A-Z]".toRegex() // TODO two letters case
+            val columnRowPattern = "[A-Z]([0-9]+)".toRegex()  // TODO could be the single airflow patter
 
-                execute(sendMessage)
+            when {
+                columnPattern.matches(update.message.text) -> {
+                    initializeIndex()
+
+                    val joinChatMessage = chats[update.message.text[0] - 'A'].toString()   // TODO two letters case
+                    val base64ChatId = joinChatMessage.replace("https://t.me/joinchat/", "")
+
+                    val messageAndChatByteArray = Base64.decodeBase64(base64ChatId)
+                    val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
+                    val preChannelId = messageAndChatByteBuffer.getLong(0)
+
+                    val channelId = (1000000000000 + preChannelId) * -1
+
+                    val sendMessage = SendMessage()
+                            .setChatId(channelId)
+                            .setText("Hello, world")
+
+                    execute(sendMessage)
+                }
+                columnRowPattern.matches(update.message.text) -> {
+                    val spreadsheetRowNumber = columnRowPattern.find(update.message.text)!!.groupValues[1].toInt()
+                    // 1 for spreadsheet 1-starting arrays and 2 for chats and heading
+                    val localRowNumber = spreadsheetRowNumber - 3
+
+                    initializeIndex()
+
+                    val joinChatMessage = chats[update.message.text[0] - 'A'].toString()   // TODO two letters case
+                    val base64ChatId = joinChatMessage.replace("https://t.me/joinchat/", "")
+
+                    val messageAndChatByteArray = Base64.decodeBase64(base64ChatId)
+                    val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
+                    val preChannelId = messageAndChatByteBuffer.getLong(0)
+
+                    val channelId = (1000000000000 + preChannelId) * -1
+
+                    val messagesText = rest[localRowNumber].value[2].toString()
+
+                    messagesText.split("\n--new-message--\n").forEach { messageText ->
+                        if (messageText.contains(".jpg")) { // TODO just to test, need better regex
+                            execute(SendPhoto()
+                                    .setChatId(channelId)
+                                    .setPhoto(messageText))
+                        } else {
+                            execute(SendMessage()
+                                    .setChatId(channelId)
+                                    .setText(messageText))
+                        }
+                    }
+                }
+                else -> {
+                    val sendMessage = SendMessage()
+                            .setChatId(update.message.chatId)
+                            .setText("Не знаю такой команды, я могу отсылать сообщение человеку" +
+                                    "по его колонке в спредшите и конкретное задание!")
+
+                    execute(sendMessage)
+                }
             }
 
-            initializeIndex()
-
-            val joinChatMessage = chats[update.message.text[0] - 'A'].toString()   // TODO two letters case
-            val base64ChatId = joinChatMessage.replace("https://t.me/joinchat/", "")
-
-            val messageAndChatByteArray = Base64.decodeBase64(base64ChatId)
-            val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
-            val preChannelId = messageAndChatByteBuffer.getLong(0)
-
-            val channelId = (1000000000000 + preChannelId) * -1
-
-            val sendMessage = SendMessage()
-                    .setChatId(channelId)
-                    .setText("Hello, world")
-
-            execute(sendMessage)
+            // TODO научиться выдавать следующее задание
+            // TODO научиться ученику завершать задание...
+            // TODO добавить валидацию текущего задания
+            // TODO дать возможность выбирать уровень для ученика
+            // TODO сделать проверку админов через spreadsheet по имени
+            // TODO обработать кейс, когда у ученика не осталось больше заданий
+            // TODO попытаться запилить обработать случай, когда у ученика не осталось больше заданий
+            // TODO добавление ученика/создание группы
         }
     }
 }
