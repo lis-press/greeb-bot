@@ -23,6 +23,7 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
     private lateinit var header: List<Any>
     private lateinit var chats: List<Any>
     private lateinit var rest: List<IndexedValue<List<Any>>>
+    // Array lists are used at the execution time, but they are hidden
 
     private fun getBugHuntSheet(): Iterable<IndexedValue<List<Any>>> {
         val response = spreadSheetService.spreadsheets().values()
@@ -64,7 +65,17 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
 
             when {
                 columnPattern.matches(update.message.text) -> {
+
                     initializeIndex()
+
+                    var lastDone: Int? = null
+
+                    for (row in rest) {
+                        if (row.value.size > update.message.text[0] - 'A' &&
+                                row.value[update.message.text[0] - 'A'] == "Прошел") {
+                            lastDone = row.index
+                        }
+                    }
 
                     val joinChatMessage = chats[update.message.text[0] - 'A'].toString()   // TODO two letters case
                     val base64ChatId = joinChatMessage.replace("https://t.me/joinchat/", "")
@@ -77,7 +88,7 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
 
                     val sendMessage = SendMessage()
                             .setChatId(channelId)
-                            .setText("Hello, world")
+                            .setText("Привет, ты прошёл $lastDone заданий")
 
                     execute(sendMessage)
                 }
@@ -122,6 +133,9 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
             }
 
             // TODO научиться выдавать следующее задание
+            // Ну я сейчас не вижу в этом большой проблемы, иду по списку, беру нужную ячейку и нахожу последнее выполненное задание и последнее делоемое задание (сейчас я не обновляю эту штуку явно, но по хорошему надо)
+            // TODO научиться сохранять выполняемое задание
+            // TODO научиться переключать задание в проверку...
             // TODO научиться ученику завершать задание...
             // TODO добавить валидацию текущего задания
             // TODO дать возможность выбирать уровень для ученика
