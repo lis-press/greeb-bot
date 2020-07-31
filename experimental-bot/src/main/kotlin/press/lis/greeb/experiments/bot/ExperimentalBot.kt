@@ -69,11 +69,15 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
                     initializeIndex()
 
                     var lastDone: Int? = null
+                    var nextTaskText: String? = null
 
                     for (row in rest) {
                         if (row.value.size > update.message.text[0] - 'A' &&
                                 row.value[update.message.text[0] - 'A'] == "Прошел") {
                             lastDone = row.index
+                        }
+                        if (row.index == (lastDone ?: 0) + 1) {
+                            nextTaskText = row.value[2].toString()
                         }
                     }
 
@@ -86,11 +90,23 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
 
                     val channelId = (1000000000000 + preChannelId) * -1
 
-                    val sendMessage = SendMessage()
-                            .setChatId(channelId)
-                            .setText("Привет, ты прошёл $lastDone заданий")
-
-                    execute(sendMessage)
+                    if (nextTaskText != null) {
+                        nextTaskText.split("\n--new-message--\n").forEach { messageText ->
+                            if (messageText.contains(".jpg")) { // TODO just to test, need better regex
+                                execute(SendPhoto()
+                                        .setChatId(channelId)
+                                        .setPhoto(messageText))
+                            } else {
+                                execute(SendMessage()
+                                        .setChatId(channelId)
+                                        .setText(messageText))
+                            }
+                        }
+                    } else {
+                        execute(SendMessage()
+                                .setChatId(channelId)
+                                .setText("Здорово! Ты прошёл все доступные задания!"))
+                    }
                 }
                 columnRowPattern.matches(update.message.text) -> {
                     val spreadsheetRowNumber = columnRowPattern.find(update.message.text)!!.groupValues[1].toInt()
@@ -132,8 +148,6 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
                 }
             }
 
-            // TODO научиться выдавать следующее задание
-            // Ну я сейчас не вижу в этом большой проблемы, иду по списку, беру нужную ячейку и нахожу последнее выполненное задание и последнее делоемое задание (сейчас я не обновляю эту штуку явно, но по хорошему надо)
             // TODO научиться сохранять выполняемое задание
             // TODO научиться переключать задание в проверку...
             // TODO научиться ученику завершать задание...
