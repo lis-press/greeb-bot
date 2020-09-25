@@ -1,5 +1,6 @@
 package press.lis.greeb.experiments.bot
 
+import com.google.api.services.sheets.v4.model.ValueRange
 import mu.KotlinLogging
 import org.apache.commons.codec.binary.Base64
 import org.telegram.telegrambots.bots.DefaultBotOptions
@@ -72,18 +73,28 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
                     var nextTaskText: String? = null
 
                     for (row in rest) {
-                        // TODO искать здесь следующее задание
-                        // TODO правильнее говорить, что задание отправлено и находить следующее, пройдено или нет уже определяет преподаватель
                         if (row.value.size > update.message.text[0] - 'A' &&
-                                row.value[update.message.text[0] - 'A'] == "Прошел") {
+                                row.value[update.message.text[0] - 'A'] == "Следующее") {
                             lastDone = row.index
-                        }
-                        // TODO выставлять следующее задание здесь
-                        // TODO останавливаться, если нет задания или закончился курс?
-                        if (row.index == (lastDone ?: 0) + 1) {
                             nextTaskText = row.value[2].toString()
+                            spreadSheetService.spreadsheets().values().update(
+                                    experimentalSheetId,
+                                    "${update.message.text}${row.index+1}",
+                                    ValueRange().setValues(listOf(listOf("Отправлено")))
+                            ).setValueInputOption("USER_ENTERED").execute()
+                        }
+                        if (row.index == (lastDone ?: 0) + 1) {
+                            // TODO останавливаться, если нет задания или закончился курс?
+
+                            spreadSheetService.spreadsheets().values().update(
+                                    experimentalSheetId,
+                                    "${update.message.text}${row.index+1}",
+                                    ValueRange().setValues(listOf(listOf("Следующее")))
+                            ).setValueInputOption("USER_ENTERED").execute()
                         }
                     }
+
+
 
                     val joinChatMessage = chats[update.message.text[0] - 'A'].toString()   // TODO two letters case
                     val base64ChatId = joinChatMessage.replace("https://t.me/joinchat/", "")
