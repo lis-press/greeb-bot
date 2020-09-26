@@ -54,7 +54,6 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
     }
 
     // TODO Bot needs to be Admin in any chat ->
-    // TODO
     override fun onUpdateReceived(update: Update?) {
         logger.info { "Got Update $update" }
 
@@ -63,6 +62,7 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
 
             val columnPattern = "[A-Z]".toRegex() // TODO two letters case
             val columnRowPattern = "[A-Z]([0-9]+)".toRegex()  // TODO could make a single regex
+            val rowPattern = "([0-9]+)".toRegex()
 
             when {
                 columnPattern.matches(update.message.text) -> {
@@ -79,21 +79,21 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
                             nextTaskText = row.value[2].toString()
                             spreadSheetService.spreadsheets().values().update(
                                     experimentalSheetId,
-                                    "${update.message.text}${row.index+1}",
+                                    "${update.message.text}${row.index + 1}",
                                     ValueRange().setValues(listOf(listOf("Отправлено")))
                             ).setValueInputOption("USER_ENTERED").execute()
                         }
                         if (row.index == (lastDone ?: 0) + 1) {
                             // TODO останавливаться, если нет задания или закончился курс?
+                            // TODO я бы этот момент обсудил и разобрался, в какой момент останавливаться?
 
                             spreadSheetService.spreadsheets().values().update(
                                     experimentalSheetId,
-                                    "${update.message.text}${row.index+1}",
+                                    "${update.message.text}${row.index + 1}",
                                     ValueRange().setValues(listOf(listOf("Следующее")))
                             ).setValueInputOption("USER_ENTERED").execute()
                         }
                     }
-
 
 
                     val joinChatMessage = chats[update.message.text[0] - 'A'].toString()   // TODO two letters case
@@ -117,17 +117,23 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
                                         .setText(messageText))
                             }
                         }
+
+                        execute(SendMessage()
+                                .setChatId(update.message.chatId)
+                                .setText("Задание отправлено для: $joinChatMessage"))
                     } else {
                         // TODO прислать информацию преподавателю, что задания закончились и можно обратиться
                         //  к методисту, чтобы он выставил следующее задание
                         execute(SendMessage()
                                 .setChatId(channelId)
                                 .setText("Здорово! Ты прошёл все доступные задания!"))
+
+                        execute(SendMessage()
+                                .setChatId(update.message.chatId)
+                                .setText("Закончились доступные задания для: $joinChatMessage"))
                     }
                 }
                 columnRowPattern.matches(update.message.text) -> {
-                    // TODO здесь просто выставляем информацию о том, что задание отправлено
-
                     val spreadsheetRowNumber = columnRowPattern.find(update.message.text)!!.groupValues[1].toInt()
                     // 1 for spreadsheet 1-starting arrays and 2 for chats and heading
                     val localRowNumber = spreadsheetRowNumber - 3
@@ -153,6 +159,37 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
                         } else {
                             execute(SendMessage()
                                     .setChatId(channelId)
+                                    .setText(messageText))
+                        }
+                    }
+
+                    execute(SendMessage()
+                            .setChatId(update.message.chatId)
+                            .setText("Задание отправлено для: $joinChatMessage"))
+
+                    spreadSheetService.spreadsheets().values().update(
+                            experimentalSheetId,
+                            update.message.text,
+                            ValueRange().setValues(listOf(listOf("Отправлено")))
+                    ).setValueInputOption("USER_ENTERED").execute()
+                }
+                rowPattern.matches(update.message.text) -> {
+                    val spreadsheetRowNumber = update.message.text.toInt()
+                    // 1 for spreadsheet 1-starting arrays and 2 for chats and heading
+                    val localRowNumber = spreadsheetRowNumber - 3
+
+                    initializeIndex()
+
+                    val messagesText = rest[localRowNumber].value[2].toString()
+
+                    messagesText.split("\n--new-message--\n").forEach { messageText ->
+                        if (messageText.contains(".jpg")) { // TODO just to test, need better regex
+                            execute(SendPhoto()
+                                    .setChatId(update.message.chatId)
+                                    .setPhoto(messageText))
+                        } else {
+                            execute(SendMessage()
+                                    .setChatId(update.message.chatId)
                                     .setText(messageText))
                         }
                     }
@@ -203,7 +240,6 @@ class ExperimentalBot(botToken: String, options: DefaultBotOptions?) : TelegramL
             *  автоматическое добавление администраторов в группы
             *  двухбуквенные ученики
             *  инлайн видео?
-            *  превью задания?
             *  можно отслеживать оплаты по тому, какое последнее задание есть у ученика?
             *  можно добавить снижение количества провереных заданий по ходу?
             *
