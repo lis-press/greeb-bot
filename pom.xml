@@ -13,6 +13,7 @@
         <module>experimental-bot</module>
         <module>commons</module>
         <module>bug-hunt-bot</module>
+        <module>language-learning-bot</module>
     </modules>
 
     <properties>
