@@ -19,7 +19,7 @@ class LanguageLearningBot(botToken: String, options: DefaultBotOptions?) : Teleg
     private val botTokenInternal: String = botToken
     private val logger = KotlinLogging.logger {}
     private val spreadSheetService = SheetsClient.sheetService
-    private val experimentalSheetId = "14_EFQnHaewEcLL3aUkMktbdCbmOVXFJd-dGajBX6SWM"
+    private val experimentalSheetId = "1z7qBwbRTdQ0X3vqm0U1BEGO7PE1Z6oIwV0gz6BDjM-M"
 
     private lateinit var header: List<Any>
     private lateinit var chats: List<Any>
@@ -58,7 +58,9 @@ class LanguageLearningBot(botToken: String, options: DefaultBotOptions?) : Teleg
         logger.info { "Got Update $update" }
 
         // Used only for me, ignore anyone else, to ensure nothing wrong happening
-        if (update?.message?.text != null && update.message.from.userName == "eliseealex") {
+        if (update?.message?.text != null &&
+                (update.message.from.userName == "eliseealex" ||
+                        update.message.from.userName == "fille_soleil")) {
 
             val columnPattern = "[A-Z]".toRegex() // TODO two letters case
             val columnRowPattern = "[A-Z]([0-9]+)".toRegex()  // TODO could make a single regex
@@ -207,33 +209,6 @@ class LanguageLearningBot(botToken: String, options: DefaultBotOptions?) : Teleg
             /*
             * TODO мигрировать это задание в какую-нибудь более понятную документацию
             *
-            * Как работать с ботом?
-            * Бот сделан для работы с базой знаний, которая находится в Spreadsheet:
-            * В ней есть задания и список учеников.
-            * Чтобы добавить нового ученика, нужно в новую колонку добавить нового ученика
-            * Напротив первого задания для уровня ученика нужно поставить "Следующее",
-            * Напротив последнего задания курса, нужно поставить "Последнее"
-            *
-            * Когда вы добавили ученику задание, чтобы бот прислал задание, нужно прислать боту колонку с учеником
-            * В таком случае бот выдаст следующее задание:
-            * Например нажмите `D` и отправьте сообщение
-            *
-            * Кроме того, бот может выдать факультативное задание (конкретный номер задания конкретному ученику)
-            * Чтобы выдать ученику D задание на строчке 140 отправьте боту `D140`
-            * При этом, если вы отправите следующее задание боту, он отправит следующее задание по программе
-            *
-            * Когда ученик сделал задание, он должен позвать учителя, чтобы тот проверил, дал обратную связь
-            * и выдал задание. Учитель даёт обратную связь и выдаёт следующее
-            * задание ученикам не нужно работать с ботом, они видят только то, что он им присылает задание в чат,
-            * в канал, в которому ученики общаются с преподавателем.
-            *
-            * TODO реализовать этот момент
-            * Бот отвечает только на сообщения Администраторов
-            * Список администраторов перечислен на отдельной странице.
-            *
-            *
-            * Работа с базой знаний
-            * В базе знаний важна последовательность заданий бот всегда назначает следующее задание по порядку
             *
             * TODO возможности для автоматизации
             *  автоматическое создание группы при добавлении нового ученика
