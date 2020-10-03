@@ -23,7 +23,7 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
     private val chatIdInternal: Long = chatId
     private val logger = KotlinLogging.logger {}
     private val spreadSheetService = SheetsClient.sheetService
-    private val bugHuntSheetId = "1u1pQx3RqqOFX-rr3Wuajyts_ufCeIQ21Mu0ndXCdv2M"
+    private val bugHuntSheetId = "1lIQCkFeZBBJ3WaZQmIiNLP5UqkhWlZ59Clno0jREhSU"
 
     private val dateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
@@ -59,7 +59,7 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
                 bugHuntSheet
                         .drop(1)
                         .sortedWith(compareBy(
-                                { it.value[3].toString().toLong() < 100 },
+                                { it.value[2].toString().toLong() < 100 },
                                 // Nulls should be last in this priority
                                 {
                                     LocalDate.parse(it.value.getOrElse(7) { "2000-01-01" }.toString(),
@@ -82,7 +82,7 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
     private fun updateNextCheckDate(dateString: String) {
         spreadSheetService.spreadsheets().values().update(
                 bugHuntSheetId,
-                "H${currentRowIndexed.index + 1}",
+                "E${currentRowIndexed.index + 1}",
                 ValueRange().setValues(listOf(listOf(dateString)))
         ).setValueInputOption("USER_ENTERED").execute()
     }
@@ -167,7 +167,7 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
 
                     spreadSheetService.spreadsheets().values().update(
                             bugHuntSheetId,
-                            "G${currentRowIndexed.index + 1}",
+                            "D${currentRowIndexed.index + 1}",
                             ValueRange().setValues(listOf(listOf(nextComment)))
                     ).setValueInputOption("USER_ENTERED").execute()
                 }
@@ -203,19 +203,14 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
         // TODO use better abstraction for parsing of the string
         val bug = currentRow.getOrNull(0)
         val hardness = currentRow.getOrNull(1)
-        val field = currentRow.getOrNull(4)
-        val solution = currentRow.getOrNull(5)
-        val comment = currentRow.getOrNull(6)
-        val nextTime = currentRow.getOrNull(7)
+        val comment = currentRow.getOrNull(3)
+        val nextTime = currentRow.getOrNull(4)
 
         val message = """
                             *Bug:* $bug
                             
                             Should check since: $nextTime
                             Hardness: $hardness 
-                            Field: $field
-                            
-                            Solution: $solution
                             
                             *Commentary:*
                             %s
@@ -236,7 +231,7 @@ class BugHuntBot(botToken: String, chatId: Long, options: DefaultBotOptions?) : 
         val nowDateString = LocalDateTime.now().format(dateTimeFormatter)
 
         val bugsString = bugHuntSheet
-                .filter { it.value.getOrNull(7) == nowDateString }
+                .filter { it.value.getOrNull(4) == nowDateString }
                 .joinToString(separator = "\n\n") { "${it.value.getOrNull(1)}: ${it.value.getOrNull(0)}" }
 
         if (bugsString != "") {
