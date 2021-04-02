@@ -98,14 +98,12 @@ class LanguageLearningBot(botToken: String, options: DefaultBotOptions?) : Teleg
                     }
 
 
+
                     val joinChatMessage = chats[update.message.text[0] - 'A'].toString()   // TODO two letters case
-                    val base64ChatId = joinChatMessage.replace("https://t.me/joinchat/", "")
 
-                    val messageAndChatByteArray = Base64.decodeBase64(base64ChatId)
-                    val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
-                    val preChannelId = messageAndChatByteBuffer.getLong(0)
+                    val channelId: Long = getChannelId(joinChatMessage)
 
-                    val channelId = (1000000000000 + preChannelId) * -1
+                    logger.info { "Sending message to $channelId" }
 
                     if (nextTaskText != null) {
                         nextTaskText.split("\n--new-message--\n").forEach { messageText ->
@@ -143,13 +141,9 @@ class LanguageLearningBot(botToken: String, options: DefaultBotOptions?) : Teleg
                     initializeIndex()
 
                     val joinChatMessage = chats[update.message.text[0] - 'A'].toString()   // TODO two letters case
-                    val base64ChatId = joinChatMessage.replace("https://t.me/joinchat/", "")
+                    val channelId: Long = getChannelId(joinChatMessage)
 
-                    val messageAndChatByteArray = Base64.decodeBase64(base64ChatId)
-                    val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
-                    val preChannelId = messageAndChatByteBuffer.getLong(0)
-
-                    val channelId = (1000000000000 + preChannelId) * -1
+                    logger.info { "Sending message to $channelId" }
 
                     val messagesText = rest[localRowNumber].value[2].toString()
 
@@ -219,6 +213,27 @@ class LanguageLearningBot(botToken: String, options: DefaultBotOptions?) : Teleg
             *  можно добавить снижение количества провереных заданий по ходу?
             *
             * */
+        }
+    }
+
+    private fun getChannelId(joinChatMessage: String): Long {
+        if (joinChatMessage.startsWith("https://t.me/joinchat/")) {
+
+            val base64ChatId = joinChatMessage
+                    .replace("https://t.me/joinchat/", "")
+
+            val messageAndChatByteArray = Base64.decodeBase64(base64ChatId)
+            val messageAndChatByteBuffer = ByteBuffer.wrap(messageAndChatByteArray)
+            val preChannelId = messageAndChatByteBuffer.getLong(0)
+
+            return (1000000000000 + preChannelId) * -1
+        } else {
+            val channelIdString =
+                    joinChatMessage
+                            .replace("https://web.telegram.org/#/im?p=c", "")
+                            .split("_")[0]
+
+            return (1000000000000 + channelIdString.toLong()) * -1
         }
     }
 }
