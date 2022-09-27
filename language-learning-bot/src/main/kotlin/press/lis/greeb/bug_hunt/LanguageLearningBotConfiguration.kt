@@ -18,11 +18,16 @@ class BugHuntBotConfiguration {
     @Bean
     fun createBot(): LanguageLearningBot {
         val botToken = configFactory.getString("bot.token")
+        // Right now we're testing on a single production environment
+        // val spreadsheetId = configFactory.getString("bot.spreadsheetId")
+        val spreadsheetId = "1z7qBwbRTdQ0X3vqm0U1BEGO7PE1Z6oIwV0gz6BDjM-M"
+
 
         val botsApi = TelegramBotsApi(DefaultBotSession::class.java)
 
         val bot = LanguageLearningBot(
-            botToken = botToken
+            botToken = botToken,
+            spreadsheetId = spreadsheetId
         )
 
         try {

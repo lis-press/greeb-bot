@@ -3,24 +3,27 @@ package press.lis.greeb.bug_hunt
 import com.google.api.services.sheets.v4.model.ValueRange
 import mu.KotlinLogging
 import org.apache.commons.codec.binary.Base64
-import org.telegram.telegrambots.bots.DefaultBotOptions
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Update
 import press.lis.greeb.spreadsheets.SheetsClient
+import press.lis.greeb.spreadsheets.SpreadSheetsHelpers
 import java.nio.ByteBuffer
 
 
 /**
+ * Note:
+ * Bot should be Admin in any chat
+ *
  * @author Aleksandr Eliseev
  */
-class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
+class LanguageLearningBot(botToken: String, spreadsheetId: String) : TelegramLongPollingBot() {
     private val botTokenInternal: String = botToken
     private val logger = KotlinLogging.logger {}
     private val spreadSheetService = SheetsClient.sheetService
-    private val experimentalSheetId = "1z7qBwbRTdQ0X3vqm0U1BEGO7PE1Z6oIwV0gz6BDjM-M"
+    private val spreadsheetIdInternal = spreadsheetId
 
     private lateinit var header: List<Any>
     private lateinit var chats: List<Any>
@@ -30,8 +33,8 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
     private fun getBugHuntSheet(): Iterable<IndexedValue<List<Any>>> {
         val response = spreadSheetService.spreadsheets().values()
             .get(
-                experimentalSheetId,
-                "A:AM"
+                spreadsheetIdInternal,
+                "A:ZZ"
             )
             .execute()
 
@@ -56,36 +59,21 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
         return botTokenInternal
     }
 
-    private fun extractColumnIndex(columnString: String): Int {
-        // TODO two letters case
-        return columnString[0] - 'A'
-    }
-
-    // TODO Bot needs to be Admin in any chat ->
     override fun onUpdateReceived(update: Update?) {
-        /*
-        * TODO возможности для автоматизации
-        *  автоматическое создание группы при добавлении нового ученика
-        *  автоматическое добавление администраторов в группы
-        *  двухбуквенные ученики
-        *  инлайн видео?
-        *  можно отслеживать оплаты по тому, какое последнее задание есть у ученика?
-        *  можно добавить снижение количества провереных заданий по ходу?
-        * */
-
-        // TODO learn to build this bot only (without everything else)
-
         logger.info { "Got Update $update" }
 
-        // Used only for me, ignore anyone else, to ensure nothing wrong happening
+        // List of admins are restricted here
         if (update?.message?.text != null &&
             (update.message.from.userName == "eliseealex" ||
-                    update.message.from.userName == "fille_soleil")
+                    update.message.from.userName == "fille_soleil" ||
+                    update.message.from.userName == "du_rita")
         ) {
 
-            val columnPattern = "([A-Z])".toRegex() // TODO two letters case
-            val columnRowPattern = "([A-Z])([0-9]+)".toRegex()  // TODO could make a single regex
+            val columnPattern = "([A-Z]+)".toRegex()
+            val columnRowPattern = "([A-Z]+)([0-9]+)".toRegex()
             val rowPattern = "([0-9]+)".toRegex()
+
+            initializeIndex()
 
             when {
                 columnPattern.matches(update.message.text) -> {
@@ -93,14 +81,11 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
                     val columnPatternMatch = columnPattern.find(update.message.text)!!
 
                     val spreadsheetColumnString = columnPatternMatch.groupValues[1]
-                    val spreadsheetColumnIndex = extractColumnIndex(spreadsheetColumnString)
-
-                    initializeIndex()
-
-                    val nextTaskText: String? = getNextTaskText(spreadsheetColumnIndex, spreadsheetColumnString)
-
+                    val spreadsheetColumnIndex = SpreadSheetsHelpers.columnNameToNumber(spreadsheetColumnString)
                     val joinChatMessage = chats[spreadsheetColumnIndex].toString()
                     val channelId: Long = getChannelId(joinChatMessage)
+
+                    val nextTaskText: String? = getNextTaskText(spreadsheetColumnIndex, spreadsheetColumnString)
 
                     logger.info { "Sending message to $channelId" }
 
@@ -136,16 +121,13 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
                     val columnRowPatternMatch = columnRowPattern.find(update.message.text)!!
 
                     val spreadsheetColumnString = columnRowPatternMatch.groupValues[1]
-                    val spreadsheetColumnIndex = extractColumnIndex(spreadsheetColumnString)
+                    val spreadsheetColumnIndex = SpreadSheetsHelpers.columnNameToNumber(spreadsheetColumnString)
+                    val joinChatString = chats[spreadsheetColumnIndex].toString()
+                    val channelId: Long = getChannelId(joinChatString)
 
                     val spreadsheetRowNumber = columnRowPatternMatch.groupValues[2].toInt()
                     // 1 for spreadsheet 1-starting arrays and 2 for chats and heading
                     val localRowNumber = spreadsheetRowNumber - 3
-
-                    initializeIndex()
-
-                    val joinChatString = chats[spreadsheetColumnIndex].toString()   // TODO two letters case
-                    val channelId: Long = getChannelId(joinChatString)
 
                     logger.info { "Sending message to $channelId" }
 
@@ -161,7 +143,7 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
                     )
 
                     spreadSheetService.spreadsheets().values().update(
-                        experimentalSheetId,
+                        spreadsheetIdInternal,
                         update.message.text,
                         ValueRange().setValues(listOf(listOf("Отправлено")))
                     ).setValueInputOption("USER_ENTERED").execute()
@@ -170,8 +152,6 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
                     val spreadsheetRowNumber = update.message.text.toInt()
                     // 1 for spreadsheet 1-starting arrays and 2 for chats and heading
                     val localRowNumber = spreadsheetRowNumber - 3
-
-                    initializeIndex()
 
                     val messagesText = rest[localRowNumber].value[2].toString()
 
@@ -201,14 +181,16 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
             logger.info { "Adding a new column $newColumnName for chat id $id and title $title" }
 
             spreadSheetService.spreadsheets().values().update(
-                experimentalSheetId,
+                spreadsheetIdInternal,
                 "${newColumnName}1:${newColumnName}2",
                 ValueRange().setValues(
                     listOf(
-                            listOf(title),
-                            listOf("https://web.telegram.org/#/im?p=c$id")
+                        listOf(title),
+                        listOf("https://web.telegram.org/#/im?p=c$id")
                         // TODO process ID correctly
-                    ))).setValueInputOption("USER_ENTERED").execute()
+                    )
+                )
+            ).setValueInputOption("USER_ENTERED").execute()
 
             initializeIndex()
         }
@@ -216,7 +198,7 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
 
     private fun sendTask(messagesText: String, chatId: Long) {
         messagesText.split("\n--new-message--\n").forEach { messageText ->
-            if (messageText.contains(".jpg")) { // TODO just to test, need better regex
+            if (messageText.contains(".jpg")) { // Need better regex based on usage pattern
                 execute(
                     SendPhoto(
                         chatId.toString(),
@@ -251,14 +233,14 @@ class LanguageLearningBot(botToken: String) : TelegramLongPollingBot() {
                 lastDone = row.index
                 nextTaskText = row.value[2].toString()
                 spreadSheetService.spreadsheets().values().update(
-                    experimentalSheetId,
+                    spreadsheetIdInternal,
                     "${spreadsheetColumnString}${row.index + 1}",
                     ValueRange().setValues(listOf(listOf("Отправлено")))
                 ).setValueInputOption("USER_ENTERED").execute()
             }
             if (row.index == (lastDone ?: 0) + 1) {
                 spreadSheetService.spreadsheets().values().update(
-                    experimentalSheetId,
+                    spreadsheetIdInternal,
                     "${spreadsheetColumnString}${row.index + 1}",
                     ValueRange().setValues(listOf(listOf("Следующее")))
                 ).setValueInputOption("USER_ENTERED").execute()

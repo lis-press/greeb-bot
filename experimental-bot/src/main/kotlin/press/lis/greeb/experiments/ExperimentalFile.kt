@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 /**
  * @author Aleksandr Eliseev
  */
-fun main(args: Array<String>) {
+fun main() {
     print("Nothing here yet :)")
 
     val messageAndChatByteArray = Base64.decodeBase64("AAAAAFI9DzwN8_90mBvbbA")
